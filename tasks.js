@@ -77,6 +77,8 @@ export async function saveTask({ id, title, note, date, priority, tags, subtasks
 }
 
 export async function deleteTask(id) {
+  if (!confirm('Delete this task?')) return false;
+
   // Proteger Pomodoro: se tarefa está vinculada, parar e desvincular
   if (pomodoroState.linkedTaskId === id) {
     stopPomodoro();
@@ -88,6 +90,7 @@ export async function deleteTask(id) {
   if (error) throw error;
   state.tasks = state.tasks.filter(t => t.id !== id);
   toast('Removida', '✕');
+  return true;
 }
 
 export async function toggleDone(id) {
@@ -122,6 +125,53 @@ export async function toggleDone(id) {
   }
   
   return t.done;
+}
+
+export async function completeTask(id) {
+  const t = state.tasks.find(task => task.id === id);
+  if (!t) return false;
+
+  // Guard clause: impede múltiplos cliques em tarefa já concluída
+  if (t.done) return false;
+
+  const wasFirstCompletion = t.completed_at === null;
+  t.done = true;
+  const now = new Date().toISOString();
+  t.completed_at = now;
+  t.firstCompletion = wasFirstCompletion;
+
+  await sb.from('tasks').update({ done: true, completed_at: now }).eq('id', id);
+
+  if (t.firstCompletion) {
+    await awardXP('task_complete', id);
+    await logActivity('task_completed', 4);
+    await checkBadges('task_complete');
+  }
+
+  if (pomodoroState.linkedTaskId === id) {
+    stopPomodoro();
+    pomodoroReset();
+    unlinkTask();
+  }
+
+  return true;
+}
+
+export async function handleTaskCompletion(id) {
+  const t = state.tasks.find(task => task.id === id);
+  if (!t) return { status: 'not_found' };
+
+  if (t.done) {
+    return { status: 'already_completed' };
+  }
+
+  const pending = (t.subtasks || []).filter(s => !s.done);
+  if (pending.length) {
+    return { status: 'pending_subtasks' };
+  }
+
+  const completed = await completeTask(id);
+  return { status: completed ? 'completed' : 'noop' };
 }
 
 export async function completeWithSubs(allDone) {

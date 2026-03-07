@@ -1,6 +1,7 @@
 import { sb } from './config.js';
 import { state } from './state.js';
 import { push as pushNotification } from './notifications.js';
+import { calculateStreak } from './utils.js';
 
 // ── BADGE ENGINE ──────────────────────────
 // Detecta condições e desbloqueia badges
@@ -126,29 +127,6 @@ async function checkStreaks() {
   if (streak >= 100) {
     await unlockBadge('streak_100');
   }
-}
-
-function calculateStreak() {
-  const completed = state.tasks.filter(t => t.done && t.completed_at).map(t => ({
-    date: new Date(t.completed_at).toISOString().split('T')[0]
-  }));
-  
-  const dates = [...new Set(completed.map(c => c.date))].sort().reverse();
-  
-  let streak = 0;
-  const today = new Date().toISOString().split('T')[0];
-  let checkDate = today;
-  
-  for (const date of dates) {
-    if (date === checkDate) {
-      streak++;
-      checkDate = new Date(new Date(date).getTime() - 864e5).toISOString().split('T')[0];
-    } else {
-      break;
-    }
-  }
-  
-  return streak;
 }
 
 // ── SUBTASKS ──────────────────────────────

@@ -28,9 +28,13 @@ const VIEW_TITLES = {
 };
 
 function refreshLucide() {
-    if (typeof lucide !== 'undefined') {
-        lucide.createIcons();
-    }
+    if (typeof lucide === 'undefined') return;
+
+    const pendingIcons = document.querySelectorAll('[data-lucide]:not([data-lucide-ready])');
+    if (!pendingIcons.length) return;
+
+    pendingIcons.forEach(el => el.setAttribute('data-lucide-ready', '1'));
+    lucide.createIcons();
 }
 
 export function setSmartView(value, el) {
