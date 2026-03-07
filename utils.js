@@ -84,6 +84,24 @@ export function getWeeksOfMonth(y, m) {
   return weeks;
 }
 
+export function calculateStreak(tasks = state.tasks) {
+  const completedDates = tasks
+    .filter(t => t.done && t.completed_at)
+    .map(t => new Date(t.completed_at).toISOString().split('T')[0]);
+
+  const dates = [...new Set(completedDates)].sort().reverse();
+  let streak = 0;
+  let checkDate = new Date().toISOString().split('T')[0];
+
+  for (const date of dates) {
+    if (date !== checkDate) break;
+    streak++;
+    checkDate = new Date(new Date(date).getTime() - 864e5).toISOString().split('T')[0];
+  }
+
+  return streak;
+}
+
 // ── TOAST ─────────────────────────────────────────────────
 export function toast(msg, icon = '✦') {
   const el = document.getElementById('toast');

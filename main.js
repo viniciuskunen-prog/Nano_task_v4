@@ -1,7 +1,7 @@
 import { state } from './state.js';
 import { toast } from './utils.js';
 import { initAuth, showScreen, doLogin, doRegister, doGoogleLogin, doForgot, doLogout } from './auth.js';
-import { saveTask, deleteTask, toggleDone, toggleSubtask, completeWithSubs, deleteGroup, deleteSubtag } from './tasks.js';
+import { saveTask, deleteTask, toggleSubtask, completeWithSubs, deleteGroup, deleteSubtag, handleTaskCompletion } from './tasks.js';
 import { render, renderTasks, getFiltered } from './render.js';
 import { toggleTimer, pomodoroToggle, pomodoroReset, pomodoroSkip, unlinkPomodoro, playSound, requestNotifPerm } from './pomodoro.js';
 import {
@@ -64,17 +64,15 @@ document.getElementById('task-container').addEventListener('click', async e => {
   switch (action) {
     case 'toggle-done': {
       e.stopPropagation();
-      const t = state.tasks.find(t => t.id === id);
-      if (!t) return;
-      if (t.done) {
-        // Re-opening a completed task
-        await toggleDone(id);
+      const result = await handleTaskCompletion(id);
+      if (result.status === 'pending_subtasks') {
+        openCompleteModal(id);
+      } else if (result.status === 'already_completed') {
+        toast('Tarefa já concluída');
+      } else if (result.status === 'completed') {
+        playSound('check');
         render();
-        toast('Reaberta');
-      } else {
-        const pending = (t.subtasks || []).filter(s => !s.done);
-        if (pending.length) { openCompleteModal(id); }
-        else { await toggleDone(id); playSound('check'); render(); toast('Concluída!'); }
+        toast('Concluída!');
       }
       break;
     }
@@ -85,7 +83,10 @@ document.getElementById('task-container').addEventListener('click', async e => {
     }
     case 'delete': {
       e.stopPropagation();
-      try { await deleteTask(id); render(); } catch (_) { toast('Erro ao remover', '⚠'); }
+      try {
+        const deleted = await deleteTask(id);
+        if (deleted) render();
+      } catch (_) { toast('Erro ao remover', '⚠'); }
       break;
     }
     case 'toggle-timer': {

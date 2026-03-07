@@ -50,34 +50,41 @@ export function pomodoroToggle() {
       saveTimerState();
     }
   } else {
-    // Validar tarefa vinculada antes de iniciar
-    if (pomodoroState.linkedTaskId) {
-      const linkedTask = state.tasks.find(t => t.id === pomodoroState.linkedTaskId);
-      if (!linkedTask || linkedTask.done) {
-        pomodoroReset();
-        unlinkTask();
-        return;
-      }
-    }
-    
-    pomodoroState.running = true;
-    pomodoroInterval = setInterval(pomodoroTick, 1000);
-    // Start linked task timer too
-    if (pomodoroState.linkedTaskId) {
-      const id = pomodoroState.linkedTaskId;
-      if (timerState.taskId !== id) {
-        const t = state.tasks.find(t => t.id === id);
-        timerState.taskId = id;
-        timerState.elapsed = t?.time_spent || 0;
-      }
-      timerState.running = true;
-      timerState.startedAt = Date.now();
-      saveTimerState();
-      startTimerTick();
-    }
+    startPomodoro();
   }
   updatePomodoroUI();
   savePomodoroState();
+}
+
+export function startPomodoro() {
+  if (pomodoroState.running) return;
+
+  // Validar tarefa vinculada antes de iniciar
+  if (pomodoroState.linkedTaskId) {
+    const linkedTask = state.tasks.find(t => t.id === pomodoroState.linkedTaskId);
+    if (!linkedTask || linkedTask.done) {
+      pomodoroReset();
+      unlinkTask();
+      return;
+    }
+  }
+
+  pomodoroState.running = true;
+  pomodoroInterval = setInterval(pomodoroTick, 1000);
+
+  // Start linked task timer too
+  if (pomodoroState.linkedTaskId) {
+    const id = pomodoroState.linkedTaskId;
+    if (timerState.taskId !== id) {
+      const t = state.tasks.find(t => t.id === id);
+      timerState.taskId = id;
+      timerState.elapsed = t?.time_spent || 0;
+    }
+    timerState.running = true;
+    timerState.startedAt = Date.now();
+    saveTimerState();
+    startTimerTick();
+  }
 }
 
 export function pomodoroReset() {
@@ -154,10 +161,7 @@ async function pomodoroComplete() {
     
     // Verificar badges de pomodoro (após atualizar contador)
     await checkBadges('pomodoro_complete');
-    if (pomodoroState.linkedTaskId) {
-      const t = state.tasks.find(t => t.id === pomodoroState.linkedTaskId);
-      if (t) { t.time_spent = (t.time_spent || 0) + getPomoDuration(); saveTaskTime(t.id, t.time_spent); }
-    }
+    stopLinkedTaskTimer();
     toast('Pomodoro concluído! 🍅');
     sendNotification('Pomodoro concluído!', 'Hora de descansar.');
     // Update daily stats
@@ -182,6 +186,31 @@ async function pomodoroComplete() {
   pomodoroState.remaining = pomodoroState.duration;
   updatePomodoroUI();
   savePomodoroState();
+}
+
+function stopLinkedTaskTimer() {
+  if (!pomodoroState.linkedTaskId) return;
+  if (timerState.taskId !== pomodoroState.linkedTaskId || !timerState.running) return;
+
+  timerState.elapsed += Math.floor((Date.now() - timerState.startedAt) / 1000);
+  timerState.running = false;
+  timerState.startedAt = null;
+  clearInterval(timerInterval);
+  timerInterval = null;
+
+  const t = state.tasks.find(task => task.id === timerState.taskId);
+  if (t) {
+    t.time_spent = timerState.elapsed;
+    saveTaskTime(t.id, t.time_spent);
+  }
+
+  const timerBtn = document.querySelector(`#task-${timerState.taskId} .task-timer-btn`);
+  if (timerBtn) {
+    timerBtn.className = 'task-timer-btn';
+    timerBtn.innerHTML = `⏱ ${formatTimer(timerState.elapsed)}`;
+  }
+
+  saveTimerState();
 }
 
 export function unlinkPomodoro() {
