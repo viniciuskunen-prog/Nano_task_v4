@@ -1,7 +1,7 @@
 import { state } from './state.js';
 import { toast } from './utils.js';
 import { initAuth, showScreen, doLogin, doRegister, doGoogleLogin, doForgot, doLogout } from './auth.js';
-import { saveTask, deleteTask, toggleSubtask, completeWithSubs, deleteGroup, deleteSubtag, handleTaskCompletion } from './tasks.js';
+import { saveTask, deleteTask, toggleSubtask, completeWithSubs, deleteGroup, deleteSubtag, handleTaskCompletion, reopenTask } from './tasks.js';
 import { render, renderTasks, getFiltered } from './render.js';
 import { toggleTimer, pomodoroToggle, pomodoroReset, pomodoroSkip, unlinkPomodoro, playSound, requestNotifPerm } from './pomodoro.js';
 import {
@@ -16,30 +16,39 @@ import {
   openProfile, closeProfile,
 } from './ui.js';
 
+const byId = id => document.getElementById(id);
+
+function bind(id, event, handler) {
+  const el = byId(id);
+  if (!el) return null;
+  el.addEventListener(event, handler);
+  return el;
+}
+
 // ── AUTH BUTTONS ──────────────────────────────────────────
-document.getElementById('login-btn').addEventListener('click', doLogin);
-document.getElementById('register-btn').addEventListener('click', doRegister);
-document.getElementById('forgot-btn').addEventListener('click', doForgot);
-document.getElementById('btn-google-login').addEventListener('click', doGoogleLogin);
-document.getElementById('btn-google-register').addEventListener('click', doGoogleLogin);
-document.getElementById('btn-go-register').addEventListener('click', () => showScreen('register'));
-document.getElementById('btn-go-login').addEventListener('click', () => showScreen('login'));
-document.getElementById('btn-go-login-2').addEventListener('click', () => showScreen('login'));
-document.getElementById('btn-forgot').addEventListener('click', () => showScreen('forgot'));
+bind('login-btn', 'click', doLogin);
+bind('register-btn', 'click', doRegister);
+bind('forgot-btn', 'click', doForgot);
+bind('btn-google-login', 'click', doGoogleLogin);
+bind('btn-google-register', 'click', doGoogleLogin);
+bind('btn-go-register', 'click', () => showScreen('register'));
+bind('btn-go-login', 'click', () => showScreen('login'));
+bind('btn-go-login-2', 'click', () => showScreen('login'));
+bind('btn-forgot', 'click', () => showScreen('forgot'));
 
 // Enter key on auth inputs
-document.getElementById('login-pass').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
-document.getElementById('login-email').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
+bind('login-pass', 'keydown', e => { if (e.key === 'Enter') doLogin(); });
+bind('login-email', 'keydown', e => { if (e.key === 'Enter') doLogin(); });
 
 // ── APP BUTTONS ───────────────────────────────────────────
-document.getElementById('btn-logout').addEventListener('click', doLogout);
-document.getElementById('add-task-btn').addEventListener('click', () => openTaskModal());
-document.getElementById('btn-profile').addEventListener('click', openProfile);
-document.getElementById('btn-close-profile').addEventListener('click', closeProfile);
-document.getElementById('btn-prefs').addEventListener('click', openPrefs);
-document.getElementById('btn-backup').addEventListener('click', exportBackup);
-document.getElementById('btn-new-group').addEventListener('click', openGroupModal);
-document.getElementById('search-input').addEventListener('input', renderTasks);
+bind('btn-logout', 'click', doLogout);
+bind('add-task-btn', 'click', () => openTaskModal());
+bind('btn-profile', 'click', openProfile);
+bind('btn-close-profile', 'click', closeProfile);
+bind('btn-prefs', 'click', openPrefs);
+bind('btn-backup', 'click', exportBackup);
+bind('btn-new-group', 'click', openGroupModal);
+bind('search-input', 'input', renderTasks);
 
 // ── NAV ITEMS ─────────────────────────────────────────────
 document.querySelectorAll('.nav-item[data-view]').forEach(el => {
@@ -52,7 +61,7 @@ document.querySelectorAll('.chip[data-pri]').forEach(el => {
 });
 
 // ── TASK CONTAINER (event delegation) ────────────────────
-document.getElementById('task-container').addEventListener('click', async e => {
+bind('task-container', 'click', async e => {
   const actionEl = e.target.closest('[data-action]');
   if (!actionEl) return;
   const action = actionEl.dataset.action;
@@ -68,7 +77,9 @@ document.getElementById('task-container').addEventListener('click', async e => {
       if (result.status === 'pending_subtasks') {
         openCompleteModal(id);
       } else if (result.status === 'already_completed') {
-        toast('Tarefa já concluída');
+        const reopened = await reopenTask(id);
+        if (reopened) { render(); toast('Tarefa reaberta'); }
+        else toast('Tarefa já concluída');
       } else if (result.status === 'completed') {
         playSound('check');
         render();
@@ -128,7 +139,7 @@ document.getElementById('task-container').addEventListener('click', async e => {
 });
 
 // ── TAG SIDEBAR (event delegation) ───────────────────────
-document.getElementById('tag-sidebar').addEventListener('click', async e => {
+bind('tag-sidebar', 'click', async e => {
   const delSubEl  = e.target.closest('[data-del-subtag]');
   const delGrpEl  = e.target.closest('[data-del-group]');
   const addEl     = e.target.closest('[data-add-subtag]');
@@ -158,7 +169,7 @@ document.getElementById('tag-sidebar').addEventListener('click', async e => {
 });
 
 // ── TASK MODAL ────────────────────────────────────────────
-document.getElementById('btn-save-task').addEventListener('click', async () => {
+bind('btn-save-task', 'click', async () => {
   const { eTags, ePri, eSubtasks } = getModalState();
   const title = document.getElementById('tm-title').value.trim();
   if (!title) { toast('Título obrigatório', '⚠'); return; }
@@ -177,16 +188,16 @@ document.getElementById('btn-save-task').addEventListener('click', async () => {
   } catch (_) { toast('Erro ao salvar tarefa', '⚠'); }
 });
 
-document.getElementById('btn-cancel-task').addEventListener('click', closeTaskModal);
-document.getElementById('tm-title').addEventListener('input', checkMeetingTitle);
-document.getElementById('btn-open-calendar').addEventListener('click', openCalendar);
+bind('btn-cancel-task', 'click', closeTaskModal);
+bind('tm-title', 'input', checkMeetingTitle);
+bind('btn-open-calendar', 'click', openCalendar);
 
-document.getElementById('btn-add-subtask').addEventListener('click', () => {
+bind('btn-add-subtask', 'click', () => {
   addSubtaskModal();
   // Re-render with updated eSubtasks (imported live from ui.js on next call)
 });
 
-document.getElementById('stm-input').addEventListener('keydown', e => {
+bind('stm-input', 'keydown', e => {
   if (e.key === 'Enter') { e.preventDefault(); addSubtaskModal(); }
 });
 
@@ -196,53 +207,71 @@ document.querySelectorAll('.pri-btn[data-pri]').forEach(btn => {
 });
 
 // Tag picker in task modal (event delegation)
-document.getElementById('tag-picker').addEventListener('click', e => {
+bind('tag-picker', 'click', e => {
   const el = e.target.closest('[data-pick-tag]');
   if (el) toggleTag(el.dataset.pickTag);
 });
 
-document.getElementById('sel-tags').addEventListener('click', e => {
+bind('sel-tags', 'click', e => {
   const el = e.target.closest('[data-pick-tag]');
   if (el) toggleTag(el.dataset.pickTag);
 });
 
 // Subtask remove buttons (event delegation on stm-list)
-document.getElementById('stm-list').addEventListener('click', e => {
+bind('stm-list', 'click', e => {
   const el = e.target.closest('[data-remove-sub]');
   if (el) removeSubtaskModal(parseInt(el.dataset.removeSub));
 });
 
 // ── COMPLETE MODAL ────────────────────────────────────────
-document.getElementById('btn-complete-all').addEventListener('click', async () => {
-  closeOverlay('complete-overlay');
-  await completeWithSubs(true);
-  playSound('check');
-  render();
+let completeModalBusy = false;
+
+async function runCompleteAction(allDone) {
+  if (completeModalBusy) return;
+  completeModalBusy = true;
+
+  const completeAllBtn = document.getElementById('btn-complete-all');
+  const promoteSubsBtn = document.getElementById('btn-promote-subs');
+  if (completeAllBtn) completeAllBtn.disabled = true;
+  if (promoteSubsBtn) promoteSubsBtn.disabled = true;
+
+  try {
+    closeOverlay('complete-overlay');
+    const completed = await completeWithSubs(allDone);
+    if (completed && allDone) playSound('check');
+    if (completed) render();
+  } finally {
+    if (completeAllBtn) completeAllBtn.disabled = false;
+    if (promoteSubsBtn) promoteSubsBtn.disabled = false;
+    completeModalBusy = false;
+  }
+}
+
+bind('btn-complete-all', 'click', async () => {
+  await runCompleteAction(true);
 });
 
-document.getElementById('btn-promote-subs').addEventListener('click', async () => {
-  closeOverlay('complete-overlay');
-  await completeWithSubs(false);
-  render();
+bind('btn-promote-subs', 'click', async () => {
+  await runCompleteAction(false);
 });
 
-document.getElementById('btn-cancel-complete').addEventListener('click', () => closeOverlay('complete-overlay'));
+bind('btn-cancel-complete', 'click', () => closeOverlay('complete-overlay'));
 
 // ── GROUP MODAL ───────────────────────────────────────────
-document.getElementById('btn-save-group').addEventListener('click', doSaveGroup);
-document.getElementById('btn-cancel-group').addEventListener('click', closeGroupModal);
+bind('btn-save-group', 'click', doSaveGroup);
+bind('btn-cancel-group', 'click', closeGroupModal);
 
-document.getElementById('gm-colors').addEventListener('click', e => {
+bind('gm-colors', 'click', e => {
   const el = e.target.closest('[data-color]');
   if (el) pickGroupColor(el.dataset.color, el);
 });
 
 // ── PREFS MODAL ───────────────────────────────────────────
-document.getElementById('btn-save-prefs').addEventListener('click', doSavePrefs);
-document.getElementById('btn-cancel-prefs').addEventListener('click', closePrefs);
-document.getElementById('notif-perm-btn').addEventListener('click', requestNotifPerm);
+bind('btn-save-prefs', 'click', doSavePrefs);
+bind('btn-cancel-prefs', 'click', closePrefs);
+bind('notif-perm-btn', 'click', requestNotifPerm);
 
-document.getElementById('pref-accent').addEventListener('click', e => {
+bind('pref-accent', 'click', e => {
   const el = e.target.closest('[data-accent]');
   if (el) pickAccent(el.dataset.accent, el);
 });
@@ -252,13 +281,13 @@ document.querySelectorAll('#pref-days .day-btn').forEach(btn => {
 });
 
 // ── POMODORO ──────────────────────────────────────────────
-document.getElementById('pomo-play-btn').addEventListener('click', pomodoroToggle);
-document.getElementById('pomo-reset-btn').addEventListener('click', pomodoroReset);
-document.getElementById('pomo-skip-btn').addEventListener('click', pomodoroSkip);
-document.getElementById('pomo-linked-task').addEventListener('click', unlinkPomodoro);
+bind('pomo-play-btn', 'click', pomodoroToggle);
+bind('pomo-reset-btn', 'click', pomodoroReset);
+bind('pomo-skip-btn', 'click', pomodoroSkip);
+bind('pomo-linked-task', 'click', unlinkPomodoro);
 
 // ── REPORT (event delegation on report container) ─────────
-document.getElementById('report-container').addEventListener('click', e => {
+bind('report-container', 'click', e => {
   const btn = e.target.closest('[data-month]');
   if (btn) changeMonth(parseInt(btn.dataset.month));
 });
