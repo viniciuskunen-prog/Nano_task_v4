@@ -1,0 +1,145 @@
+/* ── NOTIFICATION STACK ────────────────────────────────────── */
+
+#notification-stack {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 300;
+  pointer-events: none;
+  max-width: 400px;
+}
+
+.notification-card {
+  padding: 14px 18px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font-size: 13px;
+  animation: notif-enter 0.3s ease-out;
+  pointer-events: auto;
+  cursor: default;
+  user-select: none;
+}
+
+.notification-card.notif-exit {
+  animation: notif-exit 0.3s ease-in;
+}
+
+.notif-xp {
+  color: var(--accent);
+  font-weight: 700;
+  background: var(--accent-glow);
+  padding: 2px 0;
+}
+
+.notif-level {
+  color: white;
+  font-weight: 700;
+  font-size: 15px;
+  background: linear-gradient(135deg, var(--accent), #fc5c7c);
+  padding: 4px 0;
+  border-color: #fc5c7c !important;
+}
+
+.notif-badge {
+  color: var(--accent);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.notif-badge span {
+  font-size: 18px;
+}
+
+@keyframes notif-enter {
+  from {
+    transform: translateX(450px);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes notif-exit {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(450px);
+    opacity: 0;
+  }
+}
+
+/* ── MOBILE RESPONSIVENESS ──────────────────────────── */
+@media (max-width: 768px) {
+  #notification-stack {
+    top: 10px;
+    right: 10px;
+    left: 10px;
+    max-width: calc(100vw - 20px);
+  }
+
+  .notification-card {
+    padding: 12px 16px;
+    font-size: 12px;
+    border-radius: 8px;
+  }
+
+  .notif-level {
+    font-size: 14px;
+  }
+
+  .notif-badge {
+    gap: 6px;
+  }
+
+  .notif-badge span {
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  #notification-stack {
+    gap: 8px;
+  }
+
+  .notification-card {
+    padding: 10px 14px;
+    font-size: 11px;
+    border-radius: 6px;
+  }
+
+  .notif-badge span {
+    font-size: 14px;
+  }
+
+  @keyframes notif-enter {
+    from {
+      transform: translateY(-100px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
+  }
+
+  @keyframes notif-exit {
+    from {
+      transform: translateY(0);
+      opacity: 1;
+    }
+    to {
+      transform: translateY(-100px);
+      opacity: 0;
+    }
+  }
+}

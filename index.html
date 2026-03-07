@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NanoTask</title>
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="notifications.css">
+  <link rel="stylesheet" href="profile.css">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+  
+</head>
+
+<body>
+
+  <!-- ── LOADING ── -->
+  <div id="loading">
+    <div class="spinner"></div>
+  </div>
+
+  <!-- ── AUTH ── -->
+  <div id="auth-view" class="hidden">
+
+    <!-- Login -->
+    <div class="auth-card" id="screen-login">
+      <div class="auth-brand">TASK<span>.</span></div>
+      <div class="auth-title">Bem-vindo de volta</div>
+      <div class="auth-sub">Entre na sua conta para continuar</div>
+      <div class="auth-error" id="login-error"></div>
+      <div class="auth-form">
+        <div class="field-group">
+          <label class="field-label" for="login-email">Email</label>
+          <input type="email" class="field-input" id="login-email" placeholder="seu@email.com" autocomplete="email">
+        </div>
+        <div class="field-group">
+          <label class="field-label" for="login-pass">Senha</label>
+          <input type="password" class="field-input" id="login-pass" placeholder="••••••••" autocomplete="current-password">
+          <span class="forgot-link" id="btn-forgot">Esqueci minha senha</span>
+        </div>
+        <button class="auth-btn" id="login-btn">Entrar</button>
+        <div class="auth-divider">ou</div>
+        <button class="google-btn" id="btn-google-login">
+          <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
+            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+          </svg>
+          Entrar com Google
+        </button>
+      </div>
+      <div class="auth-switch">Não tem conta? <a id="btn-go-register">Criar conta</a></div>
+    </div>
+
+    <!-- Register -->
+    <div class="auth-card hidden" id="screen-register">
+      <div class="auth-brand">TASK<span>.</span></div>
+      <div class="auth-title">Criar conta</div>
+      <div class="auth-sub">Comece a organizar suas tarefas</div>
+      <div class="auth-error" id="register-error"></div>
+      <div class="auth-success" id="register-success"></div>
+      <div class="auth-form">
+        <div class="field-group">
+          <label class="field-label" for="reg-name">Nome</label>
+          <input type="text" class="field-input" id="reg-name" placeholder="Seu nome" autocomplete="name">
+        </div>
+        <div class="field-group">
+          <label class="field-label" for="reg-email">Email</label>
+          <input type="email" class="field-input" id="reg-email" placeholder="seu@email.com" autocomplete="email">
+        </div>
+        <div class="field-group">
+          <label class="field-label" for="reg-pass">Senha</label>
+          <input type="password" class="field-input" id="reg-pass" placeholder="Mínimo 6 caracteres" autocomplete="new-password">
+        </div>
+        <button class="auth-btn" id="register-btn">Criar conta</button>
+        <div class="auth-divider">ou</div>
+        <button class="google-btn" id="btn-google-register">
+          <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
+            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
+            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+          </svg>
+          Registrar com Google
+        </button>
+      </div>
+      <div class="auth-switch">Já tem conta? <a id="btn-go-login">Entrar</a></div>
+    </div>
+
+    <!-- Forgot -->
+    <div class="auth-card hidden" id="screen-forgot">
+      <div class="auth-title">Recuperar senha</div>
+      <div class="auth-sub">Enviaremos um link para redefinir sua senha</div>
+      <div class="auth-error" id="forgot-error"></div>
+      <div class="auth-success" id="forgot-success"></div>
+      <div class="auth-form">
+        <div class="field-group">
+          <label class="field-label" for="forgot-email">Email</label>
+          <input type="email" class="field-input" id="forgot-email" placeholder="seu@email.com" autocomplete="email">
+        </div>
+        <button class="auth-btn" id="forgot-btn">Enviar link</button>
+      </div>
+      <div class="auth-switch"><a id="btn-go-login-2">← Voltar ao login</a></div>
+    </div>
+
+  </div>
+
+  <!-- ── APP ── -->
+  <div id="app-view" class="app-layout hidden">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-header">
+        <div class="sidebar-brand">TASK<span>.</span></div>
+      </div>
+
+      <div class="sidebar-scroll">
+        <div class="sec-label">Visão geral</div>
+        <div class="nav-item active" data-view="all"><i data-lucide="layout-list"></i> Todas <span class="cnt" id="c-all">0</span></div>
+        <div class="nav-item" data-view="today"><i data-lucide="calendar"></i> Hoje <span class="cnt" id="c-today">0</span></div>
+        <div class="nav-item" data-view="upcoming"><i data-lucide="clock"></i> Próximas <span class="cnt" id="c-upcoming">0</span></div>
+        <div class="nav-item" data-view="overdue"><i data-lucide="alert-triangle"></i> Atrasadas <span class="cnt" id="c-overdue">0</span></div>
+        <div class="nav-item" data-view="done"><i data-lucide="check-circle"></i> Concluídas <span class="cnt" id="c-done">0</span></div>
+        <div class="nav-item" data-view="report"><i data-lucide="bar-chart-3"></i> Relatório</div>
+        <div class="divider"></div>
+        <div class="sec-label">Tags</div>
+        <div id="tag-sidebar"></div>
+        <button class="add-group-btn" id="btn-new-group"><i data-lucide="plus"></i> Novo grupo</button>
+      </div>
+
+      <!-- Pomodoro Widget -->
+      <div class="pomo-widget">
+        <div class="pomo-header">
+          <span class="pomo-label"><i data-lucide="timer"></i> Pomodoro</span>
+          <span class="pomo-mode-badge" id="pomo-mode-badge">Foco</span>
+        </div>
+        <div class="pomo-ring-wrap">
+          <svg class="pomo-svg" viewBox="0 0 80 80">
+            <circle class="pomo-track" cx="40" cy="40" r="34"/>
+            <circle class="pomo-fill" cx="40" cy="40" r="34" id="pomo-progress" transform="rotate(-90 40 40)"/>
+          </svg>
+          <div class="pomo-time" id="pomo-time">25:00</div>
+        </div>
+        <div class="pomo-controls">
+          <button class="pomo-btn" id="pomo-play-btn"><i data-lucide="play"></i></button>
+          <button class="pomo-btn" id="pomo-reset-btn" title="Resetar"><i data-lucide="rotate-ccw"></i></button>
+          <button class="pomo-btn" id="pomo-skip-btn" title="Pular"><i data-lucide="skip-forward"></i></button>
+        </div>
+        <div class="pomo-stats-row" id="pomo-stats-row">
+          <span class="pomo-stat" title="Pomos hoje">🍅 <span id="pomo-count-today">0</span></span>
+          <span class="pomo-stat" title="Descansos hoje">☕ <span id="pomo-breaks-today">0</span></span>
+          <span class="pomo-stat pomo-stat-task hidden" id="pomo-task-stat" title="Pomos nesta tarefa">✦ <span id="pomo-count-task">0</span></span>
+        </div>
+        <div class="pomo-linked-task" id="pomo-linked-task">— sem tarefa vinculada</div>
+      </div>
+
+      <!-- Sidebar Footer -->
+      <div class="sidebar-footer">
+        <div class="user-row">
+          <div class="user-avatar" id="user-avatar">?</div>
+          <div class="user-info">
+            <div class="user-name" id="user-name">—</div>
+            <div class="user-email" id="user-email">—</div>
+          </div>
+          <button class="logout-btn" id="btn-logout" title="Sair"><i data-lucide="log-out"></i></button>
+        </div>
+        <div class="prog-label">
+          <span>Progresso</span>
+          <span id="prog-txt">0 / 0</span>
+        </div>
+        <div class="prog-wrap">
+          <div class="prog-bar" id="prog-bar"></div>
+        </div>
+        <div class="xp-bar-sidebar">
+          <span class="xp-bar-sidebar-label">XP</span>
+          <div class="xp-bar-sidebar-wrap">
+            <div class="xp-bar-sidebar-fill">
+              <div class="xp-bar-sidebar-progress" id="xp-bar-progress" style="width: 0%"></div>
+            </div>
+            <span class="xp-bar-sidebar-percent" id="xp-bar-percent">0%</span>
+          </div>
+        </div>
+        <button class="footer-btn" id="btn-profile"><i data-lucide="user"></i> Perfil</button>
+        <button class="footer-btn" id="btn-prefs"><i data-lucide="settings"></i> Preferências</button>
+        <button class="footer-btn" id="btn-backup"><i data-lucide="download"></i> Backup</button>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="main">
+      <div class="topbar">
+        <button id="menu-toggle" class="menu-btn" title="Menu"><i data-lucide="menu"></i></button>
+        <div class="topbar-title" id="view-title">Todas as Tarefas</div>
+        <div class="topbar-actions">
+          <div class="search-box" id="search-wrap">
+            <i data-lucide="search" class="search-icon"></i>
+            <input type="text" placeholder="Buscar..." id="search-input">
+          </div>
+          <button class="btn btn-primary" id="add-task-btn"><i data-lucide="plus"></i> Tarefa</button>
+        </div>
+      </div>
+      <div class="filters" id="filters-bar">
+        <button class="chip active" data-pri="all">Todas</button>
+        <button class="chip" data-pri="high">🔴 Alta</button>
+        <button class="chip" data-pri="medium">🟡 Média</button>
+        <button class="chip" data-pri="low">🟢 Baixa</button>
+        <button class="chip" data-pri="none">— Sem prioridade</button>
+      </div>
+      <div class="task-container" id="task-container"></div>
+      <div class="report-container hidden" id="report-container"></div>
+    </main>
+
+  </div>
+
+  <!-- ── TASK MODAL ── -->
+  <div class="overlay" id="task-overlay">
+    <div class="modal">
+      <div class="modal-title" id="tm-heading">Nova Tarefa</div>
+      <input type="hidden" id="tm-id">
+      <div class="form-group">
+        <label class="form-label" for="tm-title">Título</label>
+        <input type="text" class="form-input" id="tm-title" placeholder="O que precisa ser feito?">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="tm-note">Nota</label>
+        <textarea class="form-textarea" id="tm-note" placeholder="Detalhes opcionais..."></textarea>
+      </div>
+      <div class="form-row-2">
+        <div class="form-group">
+          <label class="form-label" for="tm-date">Vencimento</label>
+          <input type="date" class="form-input" id="tm-date">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Prioridade</label>
+          <div class="pri-row">
+            <button class="pri-btn ph" data-pri="high">🔴</button>
+            <button class="pri-btn pm" data-pri="medium">🟡</button>
+            <button class="pri-btn pl" data-pri="low">🟢</button>
+            <button class="pri-btn pn sel" data-pri="none">—</button>
+          </div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Tags</label>
+        <div class="tag-picker" id="tag-picker"></div>
+        <div class="sel-tags" id="sel-tags"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Subtarefas</label>
+        <div id="stm-list"></div>
+        <div class="subtask-add-row">
+          <input type="text" class="form-input" id="stm-input" placeholder="+ adicionar subtarefa">
+          <button class="btn btn-ghost btn-sm" id="btn-add-subtask"><i data-lucide="plus"></i></button>
+        </div>
+      </div>
+      <div class="meeting-banner hidden" id="meeting-banner">
+        <div class="meeting-icon">📅</div>
+        <div class="meeting-text">
+          <div class="meeting-title">Parece uma reunião!</div>
+          <div class="meeting-sub">Criar evento no Google Calendar?</div>
+        </div>
+        <button class="btn btn-ghost btn-sm" id="btn-open-calendar">Criar evento</button>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="btn-cancel-task">Cancelar</button>
+        <button class="btn btn-primary" id="btn-save-task">Salvar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── SUBTASK COMPLETE MODAL ── -->
+  <div class="overlay" id="complete-overlay">
+    <div class="modal modal-sm">
+      <div class="modal-title">Concluir tarefa</div>
+      <p class="modal-desc">Esta tarefa tem subtarefas pendentes. O que deseja fazer?</p>
+      <button class="confirm-option" id="btn-complete-all">
+        <div class="opt-title"><i data-lucide="check"></i> Concluir todas as subtarefas</div>
+        <div class="opt-sub">Marca a tarefa e todas as subtarefas como concluídas</div>
+      </button>
+      <button class="confirm-option" id="btn-promote-subs">
+        <div class="opt-title"><i data-lucide="arrow-up-right"></i> Transformar subtarefas em tarefas independentes</div>
+        <div class="opt-sub">As subtarefas pendentes viram novas tarefas na lista</div>
+      </button>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="btn-cancel-complete">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── GROUP MODAL ── -->
+  <div class="overlay" id="group-overlay">
+    <div class="modal modal-sm">
+      <div class="modal-title">Novo Grupo de Tags</div>
+      <div class="form-group">
+        <label class="form-label" for="gm-name">Nome</label>
+        <input type="text" class="form-input" id="gm-name" placeholder="Ex: Clientes">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Cor</label>
+        <div class="color-row" id="gm-colors"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="gm-children">Sub-tags (uma por linha)</label>
+        <textarea class="form-textarea" id="gm-children" placeholder="Ex:&#10;Tag A&#10;Tag B"></textarea>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="btn-cancel-group">Cancelar</button>
+        <button class="btn btn-primary" id="btn-save-group">Salvar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── PREFS MODAL ── -->
+  <div class="overlay" id="prefs-overlay">
+    <div class="modal">
+      <div class="modal-title">Preferências</div>
+
+      <div class="prefs-section">
+        <div class="prefs-section-title">Geral</div>
+        <div class="form-group">
+          <label class="form-label" for="pref-company">Nome da empresa</label>
+          <input type="text" class="form-input" id="pref-company" placeholder="Minha Empresa">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="pref-lang">Idioma</label>
+          <select class="form-select" id="pref-lang">
+            <option value="pt-BR">Português (Brasil)</option>
+            <option value="en">English</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="prefs-section">
+        <div class="prefs-section-title">Horário de trabalho</div>
+        <div class="form-group">
+          <label class="form-label">Dias da semana</label>
+          <div class="days-row" id="pref-days">
+            <button class="day-btn" data-day="0">D</button>
+            <button class="day-btn active" data-day="1">S</button>
+            <button class="day-btn active" data-day="2">T</button>
+            <button class="day-btn active" data-day="3">Q</button>
+            <button class="day-btn active" data-day="4">Q</button>
+            <button class="day-btn active" data-day="5">S</button>
+            <button class="day-btn" data-day="6">S</button>
+          </div>
+        </div>
+        <div class="form-row-2">
+          <div class="form-group">
+            <label class="form-label" for="pref-start">Início</label>
+            <input type="time" class="form-input" id="pref-start" value="09:00">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="pref-end">Fim</label>
+            <input type="time" class="form-input" id="pref-end" value="18:00">
+          </div>
+        </div>
+      </div>
+
+      <div class="prefs-section">
+        <div class="prefs-section-title">Tema</div>
+        <div class="form-group">
+          <label class="form-label">Cor de destaque</label>
+          <div class="color-row" id="pref-accent"></div>
+        </div>
+      </div>
+
+      <div class="prefs-section">
+        <div class="prefs-section-title">Produtividade</div>
+        <div class="form-row-2">
+          <div class="form-group">
+            <label class="form-label" for="pref-pomo-duration">Duração do Pomodoro</label>
+            <select class="form-select" id="pref-pomo-duration">
+              <option value="15">15 min</option>
+              <option value="20">20 min</option>
+              <option value="25" selected>25 min</option>
+              <option value="30">30 min</option>
+              <option value="45">45 min</option>
+              <option value="60">60 min</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="pref-break-duration">Pausa curta</label>
+            <select class="form-select" id="pref-break-duration">
+              <option value="5" selected>5 min</option>
+              <option value="10">10 min</option>
+              <option value="15">15 min</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Som ao concluir</label>
+          <div class="toggle-row">
+            <span>Tocar som ao concluir tarefas</span>
+            <label class="toggle-switch">
+              <input type="checkbox" id="pref-sound" checked>
+              <span class="toggle-thumb"></span>
+            </label>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Notificações do browser</label>
+          <button class="btn btn-ghost btn-full" id="notif-perm-btn">Ativar notificações</button>
+        </div>
+      </div>
+
+      <div class="prefs-section">
+        <div class="prefs-section-title">Regional</div>
+        <div class="form-row-2">
+          <div class="form-group">
+            <label class="form-label" for="pref-timezone">Fuso horário</label>
+            <select class="form-select" id="pref-timezone"></select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="pref-date-format">Formato de data</label>
+            <select class="form-select" id="pref-date-format">
+              <option value="DD/MM">DD/MM (padrão)</option>
+              <option value="MM/DD">MM/DD</option>
+              <option value="relative">Relativo</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="btn-cancel-prefs">Cancelar</button>
+        <button class="btn btn-primary" id="btn-save-prefs">Salvar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── PROFILE MODAL ── -->
+  <div class="overlay" id="profile-overlay">
+    <div class="modal profile-modal">
+      <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+        <div class="profile-header">
+          <div class="profile-avatar" id="profile-avatar">?</div>
+          <div class="profile-user-info">
+            <div class="profile-user-name" id="profile-user-name">—</div>
+            <div class="profile-user-email" id="profile-user-email">—</div>
+          </div>
+        </div>
+        <button class="profile-close-btn" id="btn-close-profile"><i data-lucide="x"></i></button>
+      </div>
+      <div id="profile-content"></div>
+    </div>
+  </div>
+
+  <!-- ── TOAST ── -->
+  <div class="toast" id="toast"></div>
+
+  <!-- ── NOTIFICATION STACK ── -->
+  <div id="notification-stack"></div>
+
+  <!-- ── FAB MOBILE ── -->
+  <button id="fab-add-task" class="fab" aria-label="Nova tarefa"><i data-lucide="plus"></i></button>
+
+  <script type="module" src="js/main.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => lucide.createIcons());
+  </script>
+</body>
+
+</html>
