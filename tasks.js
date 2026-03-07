@@ -5,6 +5,8 @@ import { awardXP } from './xp.js';
 import { checkBadges } from './badges.js';
 import { pomodoroState, pomodoroReset, stopPomodoro, unlinkTask, updatePomodoroUI } from './pomodoro.js';
 
+const completionInFlight = new Set();
+
 // ── ACTIVITY LOGGING ──────────────────────────
 export async function logActivity(type, xpValue = 0) {
   try {
@@ -175,35 +177,48 @@ export async function handleTaskCompletion(id) {
 }
 
 export async function completeWithSubs(allDone) {
-  const t = state.tasks.find(t => t.id === state.pendingCompleteId);
-  if (!t) return;
-  const now = new Date().toISOString();
-  const pendingSubs = (t.subtasks || []).filter(s => !s.done);
+  const pendingId = state.pendingCompleteId;
+  if (!pendingId) return false;
+  if (completionInFlight.has(pendingId)) return false;
 
-  if (allDone) {
-    await Promise.all(pendingSubs.map(s => {
-      s.done = true; s.completed_at = now;
-      return sb.from('subtasks').update({ done: true, completed_at: now }).eq('id', s.id);
-    }));
-  } else {
-    const results = await Promise.all(pendingSubs.map(s =>
-      sb.from('tasks').insert({
-        user_id: state.currentUser.id, title: s.title, note: '',
-        date: s.date || t.date, priority: 'none',
-        tags: s.tags?.length ? s.tags : t.tags, done: false, created_at: now,
-      }).select().single()
-    ));
-    for (const { data } of results) {
-      if (data) state.tasks.unshift({ ...data, tags: data.tags || [], subtasks: [] });
-    }
-    await Promise.all(pendingSubs.map(s => sb.from('subtasks').delete().eq('id', s.id)));
-    t.subtasks = t.subtasks.filter(sub => !pendingSubs.find(p => p.id === sub.id));
+  const t = state.tasks.find(t => t.id === pendingId);
+  if (!t) {
+    state.pendingCompleteId = null;
+    return false;
   }
 
-  t.done = true; t.completed_at = now;
-  await sb.from('tasks').update({ done: true, completed_at: now }).eq('id', t.id);
-  state.pendingCompleteId = null;
-  toast('Tarefa concluída ✦');
+  completionInFlight.add(pendingId);
+  const now = new Date().toISOString();
+  try {
+    const pendingSubs = (t.subtasks || []).filter(s => !s.done);
+
+    if (allDone) {
+      await Promise.all(pendingSubs.map(s => {
+        s.done = true; s.completed_at = now;
+        return sb.from('subtasks').update({ done: true, completed_at: now }).eq('id', s.id);
+      }));
+    } else {
+      const results = await Promise.all(pendingSubs.map(s =>
+        sb.from('tasks').insert({
+          user_id: state.currentUser.id, title: s.title, note: '',
+          date: s.date || t.date, priority: 'none',
+          tags: s.tags?.length ? s.tags : t.tags, done: false, created_at: now,
+        }).select().single()
+      ));
+      for (const { data } of results) {
+        if (data) state.tasks.unshift({ ...data, tags: data.tags || [], subtasks: [] });
+      }
+      await Promise.all(pendingSubs.map(s => sb.from('subtasks').delete().eq('id', s.id)));
+      t.subtasks = t.subtasks.filter(sub => !pendingSubs.find(p => p.id === sub.id));
+    }
+
+    await completeTask(t.id);
+    state.pendingCompleteId = null;
+    toast('Tarefa concluída ✦');
+    return true;
+  } finally {
+    completionInFlight.delete(pendingId);
+  }
 }
 
 // ── SUBTASKS ──────────────────────────────────────────────
@@ -231,14 +246,8 @@ export async function toggleSubtask(taskId, subId) {
 
   const allDone = t.subtasks.every(sub => sub.done);
   if (allDone && !t.done) {
-    t.done = true;
-    t.completed_at = now;
-    // Marcar como primeira conclusão real (conclusão automática por subtasks)
-    // Necessário para sistemas futuros como XP ou estatísticas detectarem evento de conclusão
-    t.firstCompletion = true;
-    
-    await sb.from('tasks').update({ done: true, completed_at: now }).eq('id', taskId);
-    toast('Todas subtarefas concluídas! ✦');
+    const completed = await completeTask(taskId);
+    if (completed) toast('Todas subtarefas concluídas! ✦');
     
     // Proteger Pomodoro: se tarefa foi concluída automaticamente
     if (pomodoroState.linkedTaskId === taskId) {
