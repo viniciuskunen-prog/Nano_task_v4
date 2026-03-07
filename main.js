@@ -213,17 +213,35 @@ document.getElementById('stm-list').addEventListener('click', e => {
 });
 
 // ── COMPLETE MODAL ────────────────────────────────────────
+let completeModalBusy = false;
+
+async function runCompleteAction(allDone) {
+  if (completeModalBusy) return;
+  completeModalBusy = true;
+
+  const completeAllBtn = document.getElementById('btn-complete-all');
+  const promoteSubsBtn = document.getElementById('btn-promote-subs');
+  completeAllBtn.disabled = true;
+  promoteSubsBtn.disabled = true;
+
+  try {
+    closeOverlay('complete-overlay');
+    const completed = await completeWithSubs(allDone);
+    if (completed && allDone) playSound('check');
+    if (completed) render();
+  } finally {
+    completeAllBtn.disabled = false;
+    promoteSubsBtn.disabled = false;
+    completeModalBusy = false;
+  }
+}
+
 document.getElementById('btn-complete-all').addEventListener('click', async () => {
-  closeOverlay('complete-overlay');
-  await completeWithSubs(true);
-  playSound('check');
-  render();
+  await runCompleteAction(true);
 });
 
 document.getElementById('btn-promote-subs').addEventListener('click', async () => {
-  closeOverlay('complete-overlay');
-  await completeWithSubs(false);
-  render();
+  await runCompleteAction(false);
 });
 
 document.getElementById('btn-cancel-complete').addEventListener('click', () => closeOverlay('complete-overlay'));
