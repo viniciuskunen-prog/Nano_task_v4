@@ -1,7 +1,7 @@
 import { sb } from './config.js';
 import { state } from './state.js';
 import { push as pushNotification } from './notifications.js';
-import { calculateStreak } from './utils.js';
+import { getLevelFromXP } from './xp.js';
 
 // ── BADGE ENGINE ──────────────────────────
 // Detecta condições e desbloqueia badges
@@ -9,7 +9,7 @@ import { calculateStreak } from './utils.js';
 
 export async function checkBadges(triggerType, context = {}) {
   if (!state.currentUser) return;
-  
+
   switch (triggerType) {
     case 'task_complete':
       await checkMilestones();
@@ -28,25 +28,51 @@ export async function checkBadges(triggerType, context = {}) {
     case 'level_up':
       await checkLevels(context.newLevel);
       break;
+    case 'sync':
+      const current = await loadUserBadges();
+      state.unlockedBadges = new Set(current.map(b => b.slug));
+
+      const { level } = getLevelFromXP(state.profile.xp_total || 0);
+      await checkMilestones();
+      await checkProductivity();
+      await checkPunctuality();
+      await checkStreaks();
+      await checkTagMaster();
+      await checkLevels(level);
+      await checkPomodoro();
+      await checkSubtaskArchitect();
+      break;
   }
 }
 
 // ── HELPER: Desbloquear Badge ──────────────
 // badge_id em user_badges referencia slug em badge_definitions
 async function unlockBadge(slug) {
+  if (state.unlockedBadges.has(slug)) return;
+
   try {
-    await sb.from('user_badges').insert({
+    const { error } = await sb.from('user_badges').insert({
       user_id: state.currentUser.id,
-      badge_id: slug,  // Referencia badge_definitions(slug)
+      badge_id: slug,
       unlocked_at: new Date().toISOString()
     });
-    
+
+    if (error) {
+      if (error.code === '23505') { // Unique violation
+        state.unlockedBadges.add(slug);
+        return;
+      }
+      throw error;
+    }
+
+    state.unlockedBadges.add(slug);
+
     // Buscar detalhes da badge para notificação
     const { data: badgeInfo } = await sb.from('badge_definitions')
       .select('name, description, icon, rarity')
       .eq('slug', slug)
       .single();
-    
+
     if (badgeInfo) {
       pushNotification({
         type: 'badge',
@@ -54,15 +80,15 @@ async function unlockBadge(slug) {
       });
     }
   } catch (e) {
-    // Silencioso se badge já existe (unique constraint)
+    console.error('[badges] erro ao desbloquear:', e);
   }
 }
 
 // ── MILESTONES ────────────────────────────
 async function checkMilestones() {
   const completed = state.tasks.filter(t => t.done).length;
-  
-  if (completed === 1) {
+
+  if (completed >= 1) {
     await unlockBadge('first_task');
   }
 }
@@ -70,7 +96,7 @@ async function checkMilestones() {
 // ── PRODUCTIVITY: Volume de Tarefas ───────
 async function checkProductivity() {
   const completed = state.tasks.filter(t => t.done).length;
-  
+
   if (completed >= 50) {
     await unlockBadge('complete_50');
   }
@@ -85,7 +111,7 @@ async function checkProductivity() {
 // ── PUNCTUALITY: No Prazo ────────────────
 async function checkPunctuality() {
   const onTime = state.tasks.filter(t => t.done && t.date && new Date(t.completed_at).toISOString().split('T')[0] <= t.date).length;
-  
+
   if (onTime >= 50) {
     await unlockBadge('on_time_50');
   }
@@ -100,9 +126,9 @@ async function checkPomodoro() {
     .select('id')
     .eq('user_id', state.currentUser.id)
     .eq('type', 'pomodoro_complete');
-  
+
   const count = events?.length || 0;
-  
+
   if (count >= 50) {
     await unlockBadge('pomo_50');
   }
@@ -117,7 +143,7 @@ async function checkPomodoro() {
 // ── STREAK: Dias Consecutivos ────────────
 async function checkStreaks() {
   const streak = calculateStreak();
-  
+
   if (streak >= 7) {
     await unlockBadge('streak_7');
   }
@@ -129,10 +155,35 @@ async function checkStreaks() {
   }
 }
 
+function calculateStreak() {
+  const completed = state.tasks.filter(t => t.done && t.completed_at).map(t => ({
+    date: new Date(t.completed_at).toISOString().split('T')[0]
+  }));
+
+  const dates = [...new Set(completed.map(c => c.date))].sort().reverse();
+
+  let streak = 0;
+  const today = new Date().toISOString().split('T')[0];
+  // Se hoje não há tarefas concluídas, o streak pode continuar a partir de ontem
+  const yesterday = new Date(new Date(today).getTime() - 864e5).toISOString().split('T')[0];
+  let checkDate = dates[0] === today ? today : yesterday;
+
+  for (const date of dates) {
+    if (date === checkDate) {
+      streak++;
+      checkDate = new Date(new Date(date).getTime() - 864e5).toISOString().split('T')[0];
+    } else {
+      break;
+    }
+  }
+
+  return streak;
+}
+
 // ── SUBTASKS ──────────────────────────────
 async function checkSubtaskArchitect() {
   const taskWithMultipleSubs = state.tasks.filter(t => (t.subtasks || []).length >= 5 && t.done);
-  
+
   if (taskWithMultipleSubs.length >= 100) {
     await unlockBadge('subtask_architect');
   }
@@ -167,7 +218,7 @@ export async function loadUserBadges() {
       .select('badge_id, unlocked_at')
       .eq('user_id', state.currentUser.id)
       .order('unlocked_at', { ascending: false });
-    
+
     // Retornar com propriedade 'slug' para manter compatibilidade
     return (data || []).map(b => ({
       slug: b.badge_id,  // badge_id = slug de badge_definitions

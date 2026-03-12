@@ -1,7 +1,8 @@
+import { openProfile, closeProfile, openEditProfile, closeEditProfile, saveEditProfile } from "./profile.js";
 import { state } from './state.js';
 import { toast } from './utils.js';
 import { initAuth, showScreen, doLogin, doRegister, doGoogleLogin, doForgot, doLogout } from './auth.js';
-import { saveTask, deleteTask, toggleSubtask, completeWithSubs, deleteGroup, deleteSubtag, handleTaskCompletion } from './tasks.js';
+import { saveTask, deleteTask, toggleDone, toggleSubtask, completeWithSubs, deleteGroup, deleteSubtag, duplicateTask, createColumn, renameColumn, deleteColumn } from './tasks.js';
 import { render, renderTasks, getFiltered } from './render.js';
 import { toggleTimer, pomodoroToggle, pomodoroReset, pomodoroSkip, unlinkPomodoro, playSound, requestNotifPerm } from './pomodoro.js';
 import {
@@ -11,9 +12,10 @@ import {
   openCompleteModal, closeOverlay,
   openGroupModal, closeGroupModal, pickGroupColor, doSaveGroup,
   openPrefs, closePrefs, pickAccent, doSavePrefs,
-  exportBackup, updateXPBar,
+  exportBackup,
   getModalState,
-  openProfile, closeProfile,
+  toggleSidebar, toggleRightPanel, setDisplayMode,
+  applyTheme
 } from './ui.js';
 
 // ── AUTH BUTTONS ──────────────────────────────────────────
@@ -32,19 +34,37 @@ document.getElementById('login-pass').addEventListener('keydown', e => { if (e.k
 document.getElementById('login-email').addEventListener('keydown', e => { if (e.key === 'Enter') doLogin(); });
 
 // ── APP BUTTONS ───────────────────────────────────────────
+document.getElementById('menu-toggle').addEventListener('click', toggleSidebar);
+document.getElementById('right-menu-toggle').addEventListener('click', toggleRightPanel);
+document.getElementById('btn-close-right')?.addEventListener('click', toggleRightPanel);
 document.getElementById('btn-logout').addEventListener('click', doLogout);
 document.getElementById('add-task-btn').addEventListener('click', () => openTaskModal());
 document.getElementById('btn-profile').addEventListener('click', openProfile);
 document.getElementById('btn-close-profile').addEventListener('click', closeProfile);
+document.body.addEventListener('click', (e) => {
+  if (e.target.closest('#btn-open-edit-profile')) openEditProfile();
+  if (e.target.closest('#btn-cancel-edit-profile')) closeEditProfile();
+  if (e.target.closest('#btn-save-edit-profile')) saveEditProfile();
+});
+
 document.getElementById('btn-prefs').addEventListener('click', openPrefs);
 document.getElementById('btn-backup').addEventListener('click', exportBackup);
 document.getElementById('btn-new-group').addEventListener('click', openGroupModal);
 document.getElementById('search-input').addEventListener('input', renderTasks);
+document.getElementById('group-filter-select').addEventListener('change', renderTasks);
 
 // ── NAV ITEMS ─────────────────────────────────────────────
 document.querySelectorAll('.nav-item[data-view]').forEach(el => {
-  el.addEventListener('click', () => setSmartView(el.dataset.view, el));
+  el.addEventListener('click', () => {
+    setSmartView(el.dataset.view, el);
+    // Close sidebar on mobile after clicking
+    if (window.innerWidth <= 768) toggleSidebar();
+  });
 });
+
+// ── VIEW TOGGLE ───────────────────────────────────────────
+document.getElementById('btn-view-list')?.addEventListener('click', () => setDisplayMode('list'));
+document.getElementById('btn-view-board')?.addEventListener('click', () => setDisplayMode('board'));
 
 // ── PRIORITY CHIPS ────────────────────────────────────────
 document.querySelectorAll('.chip[data-pri]').forEach(el => {
@@ -52,11 +72,11 @@ document.querySelectorAll('.chip[data-pri]').forEach(el => {
 });
 
 // ── TASK CONTAINER (event delegation) ────────────────────
-document.getElementById('task-container').addEventListener('click', async e => {
+function handleTaskClick(e) {
   const actionEl = e.target.closest('[data-action]');
   if (!actionEl) return;
   const action = actionEl.dataset.action;
-  const id     = actionEl.dataset.id;
+  const id = actionEl.dataset.id;
 
   // Prevent task-main "edit" from firing when clicking child buttons
   if (action !== 'edit') e.stopPropagation();
@@ -64,15 +84,15 @@ document.getElementById('task-container').addEventListener('click', async e => {
   switch (action) {
     case 'toggle-done': {
       e.stopPropagation();
-      const result = await handleTaskCompletion(id);
-      if (result.status === 'pending_subtasks') {
-        openCompleteModal(id);
-      } else if (result.status === 'already_completed') {
-        toast('Tarefa já concluída');
-      } else if (result.status === 'completed') {
-        playSound('check');
-        render();
-        toast('Concluída!');
+      const t = state.tasks.find(t => t.id === id);
+      if (!t) return;
+      if (t.done) {
+        // Re-opening a completed task
+        toggleDone(id).then(() => { render(); toast('Reaberta'); });
+      } else {
+        const pending = (t.subtasks || []).filter(s => !s.done);
+        if (pending.length) { openCompleteModal(id); }
+        else { toggleDone(id).then(() => { playSound('check'); render(); toast('Concluída!'); }); }
       }
       break;
     }
@@ -83,10 +103,12 @@ document.getElementById('task-container').addEventListener('click', async e => {
     }
     case 'delete': {
       e.stopPropagation();
-      try {
-        const deleted = await deleteTask(id);
-        if (deleted) render();
-      } catch (_) { toast('Erro ao remover', '⚠'); }
+      deleteTask(id).then(render).catch(err => { console.error('[main] Erro ao remover tarefa', err); toast('Erro ao remover', '⚠'); });
+      break;
+    }
+    case 'duplicate': {
+      e.stopPropagation();
+      duplicateTask(id).then(render).catch(err => { console.error('[main] Erro ao duplicar tarefa', err); toast('Erro ao duplicar', '⚠'); });
       break;
     }
     case 'toggle-timer': {
@@ -103,37 +125,140 @@ document.getElementById('task-container').addEventListener('click', async e => {
     case 'toggle-subtask': {
       e.stopPropagation();
       const taskId = actionEl.dataset.taskId;
-      const subId  = actionEl.dataset.subId;
-      try { await toggleSubtask(taskId, subId); playSound('check'); render(); } catch (_) { toast('Erro ao salvar', '⚠'); }
+      const subId = actionEl.dataset.subId;
+      toggleSubtask(taskId, subId).then(() => { playSound('check'); render(); }).catch(err => { console.error('[main] Erro ao alternar subtarefa', err); toast('Erro ao salvar', '⚠'); });
       break;
     }
-    case 'link-pomo': {
-      e.stopPropagation();
-      const { pomodoroState } = await import('./pomodoro.js');
-      if (pomodoroState.linkedTaskId === id) {
-        pomodoroState.linkedTaskId = null;
-        toast('Pomodoro desvinculado');
-      } else {
-        pomodoroState.linkedTaskId = id;
-        const t = state.tasks.find(t => t.id === id);
-        toast(`🍅 Vinculado: ${t?.title?.substring(0, 30) || ''}`);
-      }
-      localStorage.setItem('pomodoroState', JSON.stringify(pomodoroState));
-      const { updatePomodoroLinked } = await import('./pomodoro.js');
-      updatePomodoroLinked();
+  }
+}
+
+document.getElementById('task-container').addEventListener('click', handleTaskClick);
+document.getElementById('board-container')?.addEventListener('click', async e => {
+  const addColBtn = e.target.closest('#btn-add-column');
+  if (addColBtn) {
+    const name = prompt('Nome da nova coluna:');
+    if (name && name.trim()) {
+      const success = await createColumn(name.trim());
+      if (success) render();
+    }
+    return;
+  }
+  
+  const renameColBtn = e.target.closest('[data-rename-col]');
+  if (renameColBtn) {
+    const colId = renameColBtn.dataset.renameCol;
+    const col = state.columns.find(c => c.id === colId);
+    if (!col) return;
+    const newName = prompt('Renomear coluna:', col.name);
+    if (newName && newName.trim() && newName.trim() !== col.name) {
+      const success = await renameColumn(colId, newName.trim());
+      if (success) render();
+    }
+    return;
+  }
+  
+  const addTaskBtn = e.target.closest('[data-add-task]');
+  if (addTaskBtn) {
+    openTaskModal(null, addTaskBtn.dataset.addTask);
+    return;
+  }
+  
+  const delColBtn = e.target.closest('[data-delete-col]');
+  if (delColBtn) {
+    const colId = delColBtn.dataset.deleteCol;
+    if (confirm("Deseja excluir esta coluna? As tarefas serão realocadas para a primeira coluna existente.")) {
+      const success = await deleteColumn(colId);
+      if (success) render();
+    }
+    return;
+  }
+
+  handleTaskClick(e);
+});
+
+document.getElementById('board-container')?.addEventListener('change', e => {
+  const sortSel = e.target.closest('.board-col-sort');
+  if (sortSel) {
+    state.taskSortMode = sortSel.value;
+    localStorage.setItem('taskSortMode', sortSel.value);
+    render();
+  }
+});
+
+// ── QUICK ADD & SEARCH CLEAR (Event Delegation) ───────────
+document.addEventListener('keydown', e => {
+  if (e.target.id === 'quick-add-input' && e.key === 'Enter') {
+    const val = e.target.value.trim();
+    if (!val) return;
+    saveTask({
+      title: val,
+      priority: 'none',
+      tags: [],
+      subtasks: []
+    }).then(() => {
+      e.target.value = '';
       render();
-      break;
+    });
+  }
+});
+
+document.addEventListener('click', e => {
+  if (e.target.id === 'btn-clear-search' || e.target.id === 'btn-clear-search-board') {
+    const searchInput = document.getElementById('search-input');
+    if (searchInput) {
+      searchInput.value = '';
+      render();
     }
   }
 });
 
+// ── INLINE COLUMN RENAME ──────────────────────────────────
+document.addEventListener('dblclick', e => {
+  const titleEl = e.target.closest('.board-col-title');
+  if (!titleEl) return;
+  
+  const colId = titleEl.dataset.renameCol;
+  const col = state.columns.find(c => c.id === colId);
+  if (!col) return;
+  
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.className = 'board-col-rename-input';
+  input.value = col.name;
+  
+  const finish = async () => {
+    const newName = input.value.trim();
+    if (newName && newName !== col.name) {
+      await renameColumn(colId, newName);
+      render();
+    } else {
+      titleEl.style.display = 'block';
+      input.remove();
+    }
+  };
+  
+  input.onblur = finish;
+  input.onkeydown = e => {
+    if (e.key === 'Enter') finish();
+    if (e.key === 'Escape') {
+      titleEl.style.display = 'block';
+      input.remove();
+    }
+  };
+  
+  titleEl.style.display = 'none';
+  titleEl.parentNode.insertBefore(input, titleEl);
+  input.focus();
+  input.select();
+});
+
 // ── TAG SIDEBAR (event delegation) ───────────────────────
 document.getElementById('tag-sidebar').addEventListener('click', async e => {
-  const delSubEl  = e.target.closest('[data-del-subtag]');
-  const delGrpEl  = e.target.closest('[data-del-group]');
-  const addEl     = e.target.closest('[data-add-subtag]');
-  const toggleEl  = e.target.closest('[data-group-toggle]');
-  const tagEl     = e.target.closest('[data-tag]');
+  const delSubEl = e.target.closest('[data-del-subtag]');
+  const delGrpEl = e.target.closest('[data-del-group]');
+  const addEl = e.target.closest('[data-add-subtag]');
+  const toggleEl = e.target.closest('[data-group-toggle]');
+  const tagEl = e.target.closest('[data-tag]');
 
   // Check directly on the clicked element to avoid closest() walking up
   const isDelBtn = e.target.classList.contains('tg-del');
@@ -152,29 +277,31 @@ document.getElementById('tag-sidebar').addEventListener('click', async e => {
     render();
     return;
   }
-  if (addEl)    { addSubtagPrompt(addEl.dataset.addSubtag); return; }
+  if (addEl) { addSubtagPrompt(addEl.dataset.addSubtag); return; }
   if (toggleEl) { toggleGroup(toggleEl.dataset.groupToggle); return; }
-  if (tagEl)    { setTagView(tagEl.dataset.tag); }
+  if (tagEl) { setTagView(tagEl.dataset.tag); }
 });
 
 // ── TASK MODAL ────────────────────────────────────────────
 document.getElementById('btn-save-task').addEventListener('click', async () => {
-  const { eTags, ePri, eSubtasks } = getModalState();
+  const { eTags, ePri, eSubtasks, eRecurrence } = getModalState();
   const title = document.getElementById('tm-title').value.trim();
   if (!title) { toast('Título obrigatório', '⚠'); return; }
   try {
     await saveTask({
-      id:       document.getElementById('tm-id').value || null,
+      id: document.getElementById('tm-id').value || null,
       title,
-      note:     document.getElementById('tm-note').value,
-      date:     document.getElementById('tm-date').value || null,
+      note: document.getElementById('tm-note').value,
+      date: document.getElementById('tm-date').value || null,
       priority: ePri,
-      tags:     eTags,
+      tags: eTags,
       subtasks: eSubtasks,
+      recurrence: eRecurrence,
+      column_id: document.getElementById('tm-column-id').value || null,
     });
     closeTaskModal();
     render();
-  } catch (_) { toast('Erro ao salvar tarefa', '⚠'); }
+  } catch (err) { console.error('[main] Erro ao salvar tarefa', err); toast('Erro ao salvar tarefa', '⚠'); }
 });
 
 document.getElementById('btn-cancel-task').addEventListener('click', closeTaskModal);
@@ -213,35 +340,17 @@ document.getElementById('stm-list').addEventListener('click', e => {
 });
 
 // ── COMPLETE MODAL ────────────────────────────────────────
-let completeModalBusy = false;
-
-async function runCompleteAction(allDone) {
-  if (completeModalBusy) return;
-  completeModalBusy = true;
-
-  const completeAllBtn = document.getElementById('btn-complete-all');
-  const promoteSubsBtn = document.getElementById('btn-promote-subs');
-  completeAllBtn.disabled = true;
-  promoteSubsBtn.disabled = true;
-
-  try {
-    closeOverlay('complete-overlay');
-    const completed = await completeWithSubs(allDone);
-    if (completed && allDone) playSound('check');
-    if (completed) render();
-  } finally {
-    completeAllBtn.disabled = false;
-    promoteSubsBtn.disabled = false;
-    completeModalBusy = false;
-  }
-}
-
 document.getElementById('btn-complete-all').addEventListener('click', async () => {
-  await runCompleteAction(true);
+  closeOverlay('complete-overlay');
+  await completeWithSubs(true);
+  playSound('check');
+  render();
 });
 
 document.getElementById('btn-promote-subs').addEventListener('click', async () => {
-  await runCompleteAction(false);
+  closeOverlay('complete-overlay');
+  await completeWithSubs(false);
+  render();
 });
 
 document.getElementById('btn-cancel-complete').addEventListener('click', () => closeOverlay('complete-overlay'));
@@ -273,7 +382,6 @@ document.querySelectorAll('#pref-days .day-btn').forEach(btn => {
 document.getElementById('pomo-play-btn').addEventListener('click', pomodoroToggle);
 document.getElementById('pomo-reset-btn').addEventListener('click', pomodoroReset);
 document.getElementById('pomo-skip-btn').addEventListener('click', pomodoroSkip);
-document.getElementById('pomo-linked-task').addEventListener('click', unlinkPomodoro);
 
 // ── REPORT (event delegation on report container) ─────────
 document.getElementById('report-container').addEventListener('click', e => {
@@ -293,4 +401,10 @@ document.addEventListener('keydown', e => {
 });
 
 // ── BOOT ──────────────────────────────────────────────────
+applyTheme(localStorage.getItem('theme') || 'system');
+setDisplayMode(state.displayMode, true);
 initAuth();
+
+document.getElementById('pref-theme')?.addEventListener('change', (e) => {
+  applyTheme(e.target.value);
+});

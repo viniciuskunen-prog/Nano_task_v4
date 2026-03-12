@@ -1,9 +1,29 @@
 import { state } from './state.js';
 
 // ── DATE HELPERS ──────────────────────────────────────────
-export const todayStr    = () => new Date().toISOString().split('T')[0];
-export const tomorrowStr = () => new Date(Date.now() + 864e5).toISOString().split('T')[0];
-export const weekStr     = () => new Date(Date.now() + 7 * 864e5).toISOString().split('T')[0];
+export const todayStr = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+export const tomorrowStr = () => {
+  const d = new Date(Date.now() + 864e5);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+export const weekStr = () => {
+  const d = new Date(Date.now() + 7 * 864e5);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+
+export function escapeHTML(str) {
+  if (typeof str !== 'string') return str;
+  return str.replace(/[&<>'"]/g, tag => ({
+    '&': '&amp;',
+    '<': '&lt;',
+    '>': '&gt;',
+    "'": '&#39;',
+    '"': '&quot;'
+  }[tag]));
+}
 
 export function fmtDate(d) {
   if (!d) return '';
@@ -18,15 +38,18 @@ export function dateStatus(d) {
   const today = todayStr();
   if (d < today) return 'overdue';
   if (d === today) return 'today';
-  if (d <= new Date(Date.now() + 3 * 864e5).toISOString().split('T')[0]) return 'soon';
+  const soon = new Date(); soon.setDate(soon.getDate() + 3);
+  const soonStr = `${soon.getFullYear()}-${String(soon.getMonth() + 1).padStart(2, '0')}-${String(soon.getDate()).padStart(2, '0')}`;
+  if (d <= soonStr) return 'soon';
   return '';
 }
 
 // ── TAG HELPERS ───────────────────────────────────────────
 export function tagColor(name) {
+  const [groupPart] = name.includes(':') ? name.split(':') : [name];
   for (const g of state.groups) {
-    if (g.name === name) return g.color;
-    if ((g.children || []).includes(name)) return g.color + 'cc';
+    if (g.name === groupPart) return g.color;
+    if ((g.children || []).includes(groupPart)) return g.color + 'cc';
   }
   return '#6b6b88';
 }
@@ -45,7 +68,7 @@ export function formatTimer(s) {
 export function businessHours(start, end) {
   if (!start || !end) return 0;
   const ws = parseInt((state.profile.work_start || '09:00').split(':')[0]);
-  const we = parseInt((state.profile.work_end   || '18:00').split(':')[0]);
+  const we = parseInt((state.profile.work_end || '18:00').split(':')[0]);
   const wd = state.profile.work_days || [1, 2, 3, 4, 5];
   let hours = 0;
   let cur = new Date(start);
@@ -84,28 +107,30 @@ export function getWeeksOfMonth(y, m) {
   return weeks;
 }
 
-export function calculateStreak(tasks = state.tasks) {
-  const completedDates = tasks
-    .filter(t => t.done && t.completed_at)
-    .map(t => new Date(t.completed_at).toISOString().split('T')[0]);
+// ── TOAST ─────────────────────────────────────────────────
+let toastTimeout;
+export function toast(msg, icon = 'check-circle', action = null) {
+  const el = document.getElementById('toast');
+  if (!el) return;
 
-  const dates = [...new Set(completedDates)].sort().reverse();
-  let streak = 0;
-  let checkDate = new Date().toISOString().split('T')[0];
-
-  for (const date of dates) {
-    if (date !== checkDate) break;
-    streak++;
-    checkDate = new Date(new Date(date).getTime() - 864e5).toISOString().split('T')[0];
+  clearTimeout(toastTimeout);
+  
+  el.innerHTML = `<span><i data-lucide="${escapeHTML(icon)}"></i></span> ${escapeHTML(msg)}`;
+  
+  if (action) {
+    const btn = document.createElement('button');
+    btn.className = 'toast-action';
+    btn.textContent = action.label;
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      action.callback();
+      el.classList.remove('show');
+    };
+    el.appendChild(btn);
   }
 
-  return streak;
-}
-
-// ── TOAST ─────────────────────────────────────────────────
-export function toast(msg, icon = '✦') {
-  const el = document.getElementById('toast');
-  el.innerHTML = `<span>${icon}</span> ${msg}`;
   el.classList.add('show');
-  setTimeout(() => el.classList.remove('show'), 2500);
+  if (window.lucide) window.lucide.createIcons();
+  
+  toastTimeout = setTimeout(() => el.classList.remove('show'), action ? 5000 : 2500);
 }

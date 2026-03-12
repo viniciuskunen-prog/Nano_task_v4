@@ -58,6 +58,40 @@
   font-weight: 700;
   color: white;
   flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+.profile-avatar::after {
+  content: 'Editar';
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.profile-avatar:hover::after {
+  opacity: 1;
+}
+
+.profile-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: filter 0.2s;
+}
+
+.profile-avatar:hover img {
+  filter: blur(2px) brightness(0.7);
 }
 
 .profile-user-info {
@@ -69,6 +103,33 @@
   font-weight: 700;
   color: var(--text);
   margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.profile-user-name .name-val {
+  padding: 2px 4px;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.profile-user-name .name-val:hover {
+  background: var(--surface2);
+  cursor: pointer;
+}
+
+.profile-user-name .name-input {
+  background: var(--surface2);
+  border: 1px solid var(--accent);
+  color: var(--text);
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+  padding: 2px 4px;
+  border-radius: 4px;
+  width: 100%;
+  outline: none;
 }
 
 .profile-user-email {
@@ -239,6 +300,7 @@
     grid-template-columns: repeat(2, 1fr);
   }
 }
+
 .badges-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
@@ -265,19 +327,26 @@
 }
 
 .badge-item.locked {
-  opacity: 0.5;
+  opacity: 0.4;
   background: var(--surface2);
+  filter: grayscale(1);
 }
 
 .badge-item.locked:hover {
   border-color: var(--border);
   background: var(--surface2);
-  cursor: not-allowed;
+  cursor: help;
+  opacity: 0.6;
 }
 
 .badge-item-icon {
   font-size: 28px;
   line-height: 1;
+  transition: transform 0.2s;
+}
+
+.badge-item:not(.locked):hover .badge-item-icon {
+  transform: scale(1.2) rotate(5deg);
 }
 
 .badge-item-name {
@@ -438,17 +507,17 @@
   .badges-grid {
     grid-template-columns: repeat(3, 1fr);
   }
-  
+
   .profile-modal {
     width: 100%;
     padding: 20px;
   }
-  
+
   .profile-header {
     flex-direction: column;
     text-align: center;
   }
-  
+
   .profile-user-info {
     flex: 1;
     width: 100%;

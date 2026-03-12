@@ -6,11 +6,11 @@ import { push as pushNotification } from './notifications.js'
 // Importação dinâmica para evitar circular dependency
 let updateXPBar = null;
 async function getUpdateXPBar() {
-  if (!updateXPBar) {
-    const uiModule = await import('./ui.js');
-    updateXPBar = uiModule.updateXPBar;
-  }
-  return updateXPBar;
+    if (!updateXPBar) {
+        const uiModule = await import('./ui.js');
+        updateXPBar = uiModule.updateXPBar;
+    }
+    return updateXPBar;
 }
 
 /*
@@ -56,18 +56,18 @@ export async function awardXP(type, taskId = null) {
         .update({ xp_total: state.profile.xp_total })
         .eq('id', userId)
 
-    // ler valor do banco para sincronizar (evita perda em race condition)
+    // Ler valor do banco para sincronizar (evita perda em race condition)
     const { data: profile } = await sb.from('profiles')
         .select('xp_total')
         .eq('id', userId)
         .single()
-    
+
     if (profile?.xp_total !== undefined) {
         state.profile.xp_total = profile.xp_total
     }
 
-    // Notificar ganho de XP
-    pushNotification({ type: 'xp', value: points })
+    // Criar animação flutuante de XP (Floating XP)
+    createFloatingXP(points, taskId);
 
     // Atualizar barra de XP no sidebar
     const updateXPBarFn = await getUpdateXPBar();
@@ -80,7 +80,7 @@ async function checkLevelUp() {
 
     const xp = state.profile.xp_total || 0
     const { level: newLevel } = getLevelFromXP(xp)
-    
+
     // Calcular nível anterior para comparação
     const prevXp = Math.max(0, xp - 1)
     const { level: prevLevel } = getLevelFromXP(prevXp)
@@ -92,7 +92,7 @@ async function checkLevelUp() {
 
         // Notificar level up
         pushNotification({ type: 'level', level: newLevel })
-        
+
         // Verificar badges de nível
         await checkBadges('level_up', { newLevel })
     }
@@ -102,7 +102,7 @@ async function checkLevelUp() {
 export function getLevelFromXP(xp) {
     const xpTotal = xp || 0;
     const level = Math.max(1, Math.floor(Math.sqrt(xpTotal / 150)) + 1);
-    
+
     // XP necessário para atingir o nível atual (usa level-1 porque o nível começa em 1)
     const xpForCurrentLevel = 150 * (level - 1) * (level - 1);
     // XP necessário para atingir o próximo nível
@@ -111,11 +111,45 @@ export function getLevelFromXP(xp) {
     const xpInCurrentLevel = xpTotal - xpForCurrentLevel;
     // XP necessário para próximo nível neste nível
     const xpNeededInLevel = xpForNextLevel - xpForCurrentLevel;
-    
+
     return {
         level,
         xpCurrentLevel: xpInCurrentLevel,
         xpNextLevel: xpNeededInLevel,
         progressPercent: Math.min(100, Math.round((xpInCurrentLevel / xpNeededInLevel) * 100))
     };
+}
+
+// ── FLOATING XP ANIMATION ─────────
+function createFloatingXP(points, taskId) {
+    const xpEl = document.createElement('div');
+    xpEl.className = 'floating-xp';
+    xpEl.textContent = `+${points} XP`;
+
+    let targetEl = null;
+    if (taskId) {
+        // Tenta achar o checkbox da tarefa
+        targetEl = document.querySelector(`#task-${taskId} .checkbox`);
+    }
+
+    // Fallback: se não achar a tarefa, joga no meio da tela no topo
+    if (targetEl) {
+        const rect = targetEl.getBoundingClientRect();
+        xpEl.style.left = `${rect.left + rect.width / 2}px`;
+        xpEl.style.top = `${rect.top}px`;
+    } else {
+        xpEl.style.left = '50%';
+        xpEl.style.top = '20%';
+        xpEl.style.transform = 'translate(-50%, 0)';
+    }
+
+    document.body.appendChild(xpEl);
+
+    // Forçar reflow para animar
+    void xpEl.offsetWidth;
+    xpEl.classList.add('animate');
+
+    setTimeout(() => {
+        if (xpEl.parentNode) xpEl.parentNode.removeChild(xpEl);
+    }, 1500);
 }

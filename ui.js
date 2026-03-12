@@ -3,38 +3,37 @@ import { state } from './state.js';
 import { toast } from './utils.js';
 import { savePrefs, saveGroup, addSubtag } from './tasks.js';
 import { pomodoroReset, pomodoroState, updateNotifBtn } from './pomodoro.js';
-import { render, renderTasks, renderTagPicker, renderSubtaskModal, renderReport } from './render.js';
 import { openProfile, closeProfile } from './profile.js';
 import { getLevelFromXP } from './xp.js';
+import { render, renderTasks, renderReport, renderTutorial, renderTagPicker, renderSubtaskModal } from './render.js';
 
 // ── TASK MODAL STATE ──────────────────────────────────────
 export let eTags = [];
 export let ePri = 'none';
 export let eSubtasks = [];
 
+export let eRecurrence = 'none';
+
 // Getter so main.js can read current modal state without re-import
 export function getModalState() {
-    return { eTags, ePri, eSubtasks };
+    return { eTags, ePri, eSubtasks, eRecurrence: document.getElementById('tm-recurrence')?.value || 'none' };
 }
 
 // ── VIEWS ─────────────────────────────────────────────────
 const VIEW_TITLES = {
-    all: 'Todas as Tarefas',
+    all: 'Tarefas',
     today: 'Hoje',
     upcoming: 'Próximos 7 dias',
     overdue: 'Atrasadas',
     done: 'Concluídas',
     report: 'Relatório Mensal',
+    tutorial: 'Guia do App',
 };
 
 function refreshLucide() {
-    if (typeof lucide === 'undefined') return;
-
-    const pendingIcons = document.querySelectorAll('[data-lucide]:not([data-lucide-ready])');
-    if (!pendingIcons.length) return;
-
-    pendingIcons.forEach(el => el.setAttribute('data-lucide-ready', '1'));
-    lucide.createIcons();
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
 }
 
 export function setSmartView(value, el) {
@@ -46,15 +45,37 @@ export function setSmartView(value, el) {
     document.getElementById('view-title').textContent = VIEW_TITLES[value] || value;
 
     const isReport = value === 'report';
-    document.getElementById('task-container').classList.toggle('hidden', isReport);
+    const isTutorial = value === 'tutorial';
+
+    const tc = document.getElementById('task-container');
+    const bc = document.getElementById('board-container');
+    
+    if (isReport || isTutorial) {
+        if (tc) tc.classList.add('hidden');
+        if (bc) bc.classList.add('hidden');
+    } else if (state.displayMode === 'board') {
+        if (tc) tc.classList.add('hidden');
+        if (bc) bc.classList.remove('hidden');
+    } else {
+        if (tc) tc.classList.remove('hidden');
+        if (bc) bc.classList.add('hidden');
+    }
     document.getElementById('report-container').classList.toggle('hidden', !isReport);
-    document.getElementById('filters-bar').classList.toggle('hidden', isReport);
-    document.getElementById('search-wrap').classList.toggle('hidden', isReport);
-    document.getElementById('add-task-btn').classList.toggle('hidden', isReport);
+
+    const tutorialContainer = document.getElementById('tutorial-container');
+    if (tutorialContainer) tutorialContainer.classList.toggle('hidden', !isTutorial);
+
+    document.getElementById('filters-bar').classList.toggle('hidden', !!(isReport || isTutorial));
+    document.getElementById('search-wrap').classList.toggle('hidden', !!(isReport || isTutorial));
+    const viewToggle = document.getElementById('view-toggle');
+    if (viewToggle) viewToggle.classList.toggle('hidden', !!(isReport || isTutorial));
+    document.getElementById('add-task-btn').classList.toggle('hidden', !!(isReport || isTutorial));
 
     if (isReport) renderReport();
+    else if (isTutorial) renderTutorial();
     else renderTasks();
 
+    localStorage.setItem('currentView', JSON.stringify(state.view));
     refreshLucide();
 }
 
@@ -64,13 +85,24 @@ export function setTagView(tagName) {
     document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
 
     document.getElementById('view-title').textContent = tagName;
-    document.getElementById('task-container').classList.remove('hidden');
+    const tc = document.getElementById('task-container');
+    const bc = document.getElementById('board-container');
+    if (state.displayMode === 'board') {
+        if (tc) tc.classList.add('hidden');
+        if (bc) bc.classList.remove('hidden');
+    } else {
+        if (tc) tc.classList.remove('hidden');
+        if (bc) bc.classList.add('hidden');
+    }
     document.getElementById('report-container').classList.add('hidden');
     document.getElementById('filters-bar').classList.remove('hidden');
     document.getElementById('search-wrap').classList.remove('hidden');
+    const viewToggle = document.getElementById('view-toggle');
+    if (viewToggle) viewToggle.classList.remove('hidden');
     document.getElementById('add-task-btn').classList.remove('hidden');
 
     renderTasks();
+    localStorage.setItem('currentView', JSON.stringify(state.view));
     refreshLucide();
 }
 
@@ -100,7 +132,47 @@ export function changeMonth(dir) {
     refreshLucide();
 }
 
+export function setDisplayMode(mode, force = false) {
+    if (!force && state.displayMode === mode) return;
+    state.displayMode = mode;
+    localStorage.setItem('viewMode', mode);
+    
+    document.getElementById('btn-view-list')?.classList.toggle('active', mode === 'list');
+    document.getElementById('btn-view-board')?.classList.toggle('active', mode === 'board');
+    
+    const isReport = state.view.value === 'report';
+    const isTutorial = state.view.value === 'tutorial';
+    
+    const tc = document.getElementById('task-container');
+    const bc = document.getElementById('board-container');
+    
+    if (isReport || isTutorial) {
+        if (tc) tc.classList.add('hidden');
+        if (bc) bc.classList.add('hidden');
+    } else if (mode === 'board') {
+        if (tc) tc.classList.add('hidden');
+        if (bc) bc.classList.remove('hidden');
+        console.log("Set display mode to board. BC classes:", bc.className);
+    } else {
+        if (tc) tc.classList.remove('hidden');
+        if (bc) bc.classList.add('hidden');
+    }
+    
+    render();
+    refreshLucide();
+}
+
 // ── SIDEBAR ───────────────────────────────────────────────
+export function toggleSidebar() {
+    const sb = document.querySelector('.sidebar');
+    if (sb) sb.classList.toggle('open');
+}
+
+export function toggleRightPanel() {
+    const rp = document.querySelector('.right-panel');
+    if (rp) rp.classList.toggle('open');
+}
+
 export function toggleGroup(id) {
     if (state.expanded.has(id)) state.expanded.delete(id);
     else state.expanded.add(id);
@@ -119,33 +191,43 @@ export async function addSubtagPrompt(gid) {
 }
 
 // ── TASK MODAL ────────────────────────────────────────────
-export function openTaskModal(task = null) {
-    eTags = task ? [...(task.tags || [])] : [];
-    ePri = task?.priority || 'none';
-    eSubtasks = task ? JSON.parse(JSON.stringify(task.subtasks || [])) : [];
+export function openTaskModal(task = null, columnId = null) {
+    try {
+        eTags = task ? [...(task.tags || [])] : [];
+        ePri = task?.priority || 'none';
+        eSubtasks = task ? JSON.parse(JSON.stringify(task.subtasks || [])) : [];
 
-    document.getElementById('tm-id').value = task?.id || '';
-    document.getElementById('tm-heading').textContent = task ? 'Editar Tarefa' : 'Nova Tarefa';
-    document.getElementById('tm-title').value = task?.title || '';
-    document.getElementById('tm-note').value = task?.note || '';
-    document.getElementById('tm-date').value = task?.date || '';
-    document.getElementById('stm-input').value = '';
-    document.getElementById('meeting-banner').classList.add('hidden');
+        document.getElementById('tm-id').value = task?.id || '';
+        document.getElementById('tm-column-id').value = columnId || '';
+        document.getElementById('tm-heading').textContent = task ? 'Editar Tarefa' : 'Nova Tarefa';
+        document.getElementById('tm-title').value = task?.title || '';
+        document.getElementById('tm-note').value = task?.note || '';
+        document.getElementById('tm-date').value = task?.date || '';
+        let recurrenceSelect = document.getElementById('tm-recurrence');
+        if (recurrenceSelect) {
+            recurrenceSelect.value = task?.recurrence || 'none';
+        }
+        document.getElementById('stm-input').value = '';
+        document.getElementById('meeting-banner')?.classList.add('hidden');
 
-    document.querySelectorAll('.pri-btn').forEach(b => {
-        b.classList.toggle('sel', b.dataset.pri === ePri);
-    });
+        document.querySelectorAll('.pri-btn').forEach(b => {
+            b.classList.toggle('sel', b.dataset.pri === ePri);
+        });
 
-    renderTagPicker(eTags);
-    renderSubtaskModal(eSubtasks);
+        renderTagPicker(eTags);
+        renderSubtaskModal(eSubtasks);
 
-    if (task) checkMeetingTitle();
+        if (task) checkMeetingTitle();
+    } catch (err) {
+        console.error('[ui] Erro ao preparar modal de tarefa:', err);
+    }
 
     openOverlay('task-overlay');
     refreshLucide();
 
     setTimeout(() => {
-        document.getElementById('tm-title')?.focus();
+        const titleInput = document.getElementById('tm-title');
+        if (titleInput) titleInput.focus();
     }, 100);
 }
 
@@ -290,7 +372,6 @@ export async function doSaveGroup() {
 
 // ── PREFS MODAL ───────────────────────────────────────────
 export function openPrefs() {
-    document.getElementById('pref-company').value = state.profile.company_name || '';
     document.getElementById('pref-lang').value = state.profile.language || 'pt-BR';
     document.getElementById('pref-start').value = state.profile.work_start || '09:00';
     document.getElementById('pref-end').value = state.profile.work_end || '18:00';
@@ -298,6 +379,7 @@ export function openPrefs() {
     document.getElementById('pref-break-duration').value = state.profile.break_duration || 5;
     document.getElementById('pref-sound').checked = state.profile.sound_enabled !== false;
     document.getElementById('pref-date-format').value = state.profile.date_format || 'DD/MM';
+    document.getElementById('pref-theme').value = localStorage.getItem('theme') || 'system';
 
     const workDays = state.profile.work_days || [1, 2, 3, 4, 5];
     document.querySelectorAll('#pref-days .day-btn').forEach(btn => {
@@ -310,7 +392,7 @@ export function openPrefs() {
     ).join('');
 
     const tzSel = document.getElementById('pref-timezone');
-    if (!tzSel.options.length) {
+    if (tzSel && !tzSel.options.length) {
         const tzs = Intl.supportedValuesOf?.('timeZone') || [
             'America/Sao_Paulo',
             'America/New_York',
@@ -326,7 +408,7 @@ export function openPrefs() {
         });
     }
 
-    tzSel.value = state.profile.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (tzSel) tzSel.value = state.profile.timezone || Intl.DateTimeFormat().resolvedOptions().timeZone;
 
     updateNotifBtn();
     openOverlay('prefs-overlay');
@@ -357,7 +439,6 @@ export async function doSavePrefs() {
     const newPomoDur = parseInt(document.getElementById('pref-pomo-duration').value);
 
     const updates = {
-        company_name: document.getElementById('pref-company').value,
         language: document.getElementById('pref-lang').value,
         work_start: document.getElementById('pref-start').value,
         work_end: document.getElementById('pref-end').value,
@@ -369,6 +450,9 @@ export async function doSavePrefs() {
         date_format: document.getElementById('pref-date-format').value,
         timezone: document.getElementById('pref-timezone').value,
     };
+
+    const theme = document.getElementById('pref-theme').value;
+    applyTheme(theme);
 
     await savePrefs(updates);
 
@@ -422,29 +506,60 @@ export function closeOverlay(id) {
 }
 
 // ── MOBILE SIDEBAR TOGGLE ─────────────────────────────────
-document.addEventListener('DOMContentLoaded', () => {
-    const menuBtn = document.getElementById('menu-toggle');
+// Usa event delegation para funcionar mesmo após o app-view sair do estado hidden
+document.addEventListener('click', (e) => {
+    const menuBtn = e.target.closest('#menu-toggle');
     const sidebar = document.querySelector('.sidebar');
+    if (!sidebar) return;
 
-    if (menuBtn && sidebar) {
-        menuBtn.addEventListener('click', () => {
-            sidebar.classList.toggle('open');
-        });
-
-        document.addEventListener('click', e => {
-            if (!sidebar.classList.contains('open')) return;
-
-            if (!sidebar.contains(e.target) && !menuBtn.contains(e.target)) {
-                sidebar.classList.remove('open');
-            }
-        });
+    if (menuBtn) {
+        sidebar.classList.toggle('open');
+        return;
     }
 
-    const fab = document.getElementById('fab-add-task');
-    if (fab) {
-        fab.addEventListener('click', () => openTaskModal());
+    // Fecha ao clicar fora
+    if (sidebar.classList.contains('open') && !sidebar.contains(e.target)) {
+        sidebar.classList.remove('open');
     }
 });
 
+const fab = document.getElementById('fab-add-task');
+if (fab) {
+    fab.addEventListener('click', () => openTaskModal());
+}
+
+// ── SUBSCRIPTION EVENTS ──
+window.openCheckout = (plan = 'annual') => {
+    const urls = {
+        monthly: 'https://pay.kiwify.com.br/NBsRV6r',
+        annual: 'https://pay.kiwify.com.br/4jJUC9R'
+    };
+    const baseUrl = urls[plan] || urls.annual;
+    const emailParam = state.profile?.email || state.currentUser?.email || '';
+
+    // Passa o e-mail pela URL para que o Checkout já abra preenchido e evite erros no webhook!
+    const finalUrl = emailParam ? `${baseUrl}?email=${encodeURIComponent(emailParam)}` : baseUrl;
+    window.open(finalUrl, '_blank');
+};
+
+document.getElementById('btn-subscribe-now')?.addEventListener('click', () => {
+    window.openCheckout('annual');
+});
+
+document.getElementById('btn-logout-restricted')?.addEventListener('click', () => {
+    document.getElementById('btn-logout')?.click();
+});
+
 // Re-exportar funções de profile.js para manter compatibilidade
-export { openProfile, closeProfile } from './profile.js';
+export { openProfile, closeProfile, openEditProfile, closeEditProfile, saveEditProfile } from './profile.js';
+
+export function applyTheme(theme) {
+    if (theme === 'light') {
+        document.documentElement.setAttribute('data-theme', 'light');
+    } else if (theme === 'dark') {
+        document.documentElement.setAttribute('data-theme', 'dark');
+    } else {
+        document.documentElement.removeAttribute('data-theme');
+    }
+    localStorage.setItem('theme', theme);
+}

@@ -8,8 +8,32 @@
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="notifications.css">
   <link rel="stylesheet" href="profile.css">
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
-  
+  <link
+    href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap"
+    rel="stylesheet">
+
+  <!-- ── PWA & MOBILE META ── -->
+  <meta name="theme-color" content="#351cd4">
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="apple-touch-icon" href="icon-512.png">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="NanoTask">
+
+  <!-- ── SOCIAL MEDIA (LINK PREVIEW) ── -->
+  <meta property="og:type" content="website">
+  <meta property="og:title" content="NanoTask - Foco e Produtividade Gamificada">
+  <meta property="og:description"
+    content="Organize suas tarefas, use o cronômetro Pomodoro e ganhe XP. O gerenciador de tarefas que transforma sua rotina em um jogo.">
+  <meta property="og:image" content="https://nanotask.com.br/previa_link.webp">
+  <meta property="og:url" content="https://nanotask.com.br">
+
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="NanoTask - Produtividade Gamificada">
+  <meta name="twitter:description" content="Gestão de tarefas com Pomodoro e sistema de níveis.">
+  <meta name="twitter:image" content="https://nanotask.com.br/previa_link.webp">
+
 </head>
 
 <body>
@@ -24,7 +48,8 @@
 
     <!-- Login -->
     <div class="auth-card" id="screen-login">
-      <div class="auth-brand">TASK<span>.</span></div>
+      <img src="logo.svg" alt="NanoTask" class="auth-logo"
+        style="height:48px; width:auto; max-width:160px; object-fit:contain; margin-bottom:8px;">
       <div class="auth-title">Bem-vindo de volta</div>
       <div class="auth-sub">Entre na sua conta para continuar</div>
       <div class="auth-error" id="login-error"></div>
@@ -35,17 +60,22 @@
         </div>
         <div class="field-group">
           <label class="field-label" for="login-pass">Senha</label>
-          <input type="password" class="field-input" id="login-pass" placeholder="••••••••" autocomplete="current-password">
+          <input type="password" class="field-input" id="login-pass" placeholder="••••••••"
+            autocomplete="current-password">
           <span class="forgot-link" id="btn-forgot">Esqueci minha senha</span>
         </div>
         <button class="auth-btn" id="login-btn">Entrar</button>
         <div class="auth-divider">ou</div>
         <button class="google-btn" id="btn-google-login">
           <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
-            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
-            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+            <path fill="#4285F4"
+              d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+            <path fill="#34A853"
+              d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+            <path fill="#FBBC05"
+              d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" />
+            <path fill="#EA4335"
+              d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
           </svg>
           Entrar com Google
         </button>
@@ -55,7 +85,8 @@
 
     <!-- Register -->
     <div class="auth-card hidden" id="screen-register">
-      <div class="auth-brand">TASK<span>.</span></div>
+      <img src="logo.svg" alt="NanoTask" class="auth-logo"
+        style="height:48px; width:auto; max-width:160px; object-fit:contain; margin-bottom:8px;">
       <div class="auth-title">Criar conta</div>
       <div class="auth-sub">Comece a organizar suas tarefas</div>
       <div class="auth-error" id="register-error"></div>
@@ -71,16 +102,26 @@
         </div>
         <div class="field-group">
           <label class="field-label" for="reg-pass">Senha</label>
-          <input type="password" class="field-input" id="reg-pass" placeholder="Mínimo 6 caracteres" autocomplete="new-password">
+          <input type="password" class="field-input" id="reg-pass" placeholder="Mínimo 6 caracteres"
+            autocomplete="new-password">
+        </div>
+        <div class="field-group">
+          <label class="field-label" for="reg-pass-confirm">Confirmar Senha</label>
+          <input type="password" class="field-input" id="reg-pass-confirm" placeholder="Confirme a senha"
+            autocomplete="new-password">
         </div>
         <button class="auth-btn" id="register-btn">Criar conta</button>
         <div class="auth-divider">ou</div>
         <button class="google-btn" id="btn-google-register">
           <svg width="16" height="16" viewBox="0 0 24 24" aria-hidden="true">
-            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
-            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+            <path fill="#4285F4"
+              d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+            <path fill="#34A853"
+              d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+            <path fill="#FBBC05"
+              d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z" />
+            <path fill="#EA4335"
+              d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
           </svg>
           Registrar com Google
         </button>
@@ -112,47 +153,28 @@
     <!-- Sidebar -->
     <aside class="sidebar">
       <div class="sidebar-header">
-        <div class="sidebar-brand">TASK<span>.</span></div>
+        <img src="logo.svg" alt="NanoTask" class="sidebar-logo"
+          style="height:36px; width:auto; max-width:120px; object-fit:contain; display:block;">
       </div>
 
       <div class="sidebar-scroll">
         <div class="sec-label">Visão geral</div>
-        <div class="nav-item active" data-view="all"><i data-lucide="layout-list"></i> Todas <span class="cnt" id="c-all">0</span></div>
-        <div class="nav-item" data-view="today"><i data-lucide="calendar"></i> Hoje <span class="cnt" id="c-today">0</span></div>
-        <div class="nav-item" data-view="upcoming"><i data-lucide="clock"></i> Próximas <span class="cnt" id="c-upcoming">0</span></div>
-        <div class="nav-item" data-view="overdue"><i data-lucide="alert-triangle"></i> Atrasadas <span class="cnt" id="c-overdue">0</span></div>
-        <div class="nav-item" data-view="done"><i data-lucide="check-circle"></i> Concluídas <span class="cnt" id="c-done">0</span></div>
+        <div class="nav-item active" data-view="all"><i data-lucide="layout-list"></i> Todas <span class="cnt"
+            id="c-all">0</span></div>
+        <div class="nav-item" data-view="today"><i data-lucide="calendar"></i> Hoje <span class="cnt"
+            id="c-today">0</span></div>
+        <div class="nav-item" data-view="upcoming"><i data-lucide="clock"></i> Próximas <span class="cnt"
+            id="c-upcoming">0</span></div>
+        <div class="nav-item" data-view="overdue"><i data-lucide="alert-triangle"></i> Atrasadas <span class="cnt"
+            id="c-overdue">0</span></div>
+        <div class="nav-item" data-view="done"><i data-lucide="check-circle"></i> Concluídas <span class="cnt"
+            id="c-done">0</span></div>
         <div class="nav-item" data-view="report"><i data-lucide="bar-chart-3"></i> Relatório</div>
+        <div class="nav-item" data-view="tutorial"><i data-lucide="book-open"></i> Guia do App</div>
         <div class="divider"></div>
         <div class="sec-label">Tags</div>
         <div id="tag-sidebar"></div>
         <button class="add-group-btn" id="btn-new-group"><i data-lucide="plus"></i> Novo grupo</button>
-      </div>
-
-      <!-- Pomodoro Widget -->
-      <div class="pomo-widget">
-        <div class="pomo-header">
-          <span class="pomo-label"><i data-lucide="timer"></i> Pomodoro</span>
-          <span class="pomo-mode-badge" id="pomo-mode-badge">Foco</span>
-        </div>
-        <div class="pomo-ring-wrap">
-          <svg class="pomo-svg" viewBox="0 0 80 80">
-            <circle class="pomo-track" cx="40" cy="40" r="34"/>
-            <circle class="pomo-fill" cx="40" cy="40" r="34" id="pomo-progress" transform="rotate(-90 40 40)"/>
-          </svg>
-          <div class="pomo-time" id="pomo-time">25:00</div>
-        </div>
-        <div class="pomo-controls">
-          <button class="pomo-btn" id="pomo-play-btn"><i data-lucide="play"></i></button>
-          <button class="pomo-btn" id="pomo-reset-btn" title="Resetar"><i data-lucide="rotate-ccw"></i></button>
-          <button class="pomo-btn" id="pomo-skip-btn" title="Pular"><i data-lucide="skip-forward"></i></button>
-        </div>
-        <div class="pomo-stats-row" id="pomo-stats-row">
-          <span class="pomo-stat" title="Pomos hoje">🍅 <span id="pomo-count-today">0</span></span>
-          <span class="pomo-stat" title="Descansos hoje">☕ <span id="pomo-breaks-today">0</span></span>
-          <span class="pomo-stat pomo-stat-task hidden" id="pomo-task-stat" title="Pomos nesta tarefa">✦ <span id="pomo-count-task">0</span></span>
-        </div>
-        <div class="pomo-linked-task" id="pomo-linked-task">— sem tarefa vinculada</div>
       </div>
 
       <!-- Sidebar Footer -->
@@ -161,25 +183,12 @@
           <div class="user-avatar" id="user-avatar">?</div>
           <div class="user-info">
             <div class="user-name" id="user-name">—</div>
-            <div class="user-email" id="user-email">—</div>
+            <div class="xp-mini-bar">
+              <div class="xp-mini-fill" id="xp-bar-progress" style="width: 0%"></div>
+            </div>
+            <div class="xp-mini-text"><span id="xp-bar-level">Nível 1</span> • <span id="xp-bar-percent">0%</span></div>
           </div>
           <button class="logout-btn" id="btn-logout" title="Sair"><i data-lucide="log-out"></i></button>
-        </div>
-        <div class="prog-label">
-          <span>Progresso</span>
-          <span id="prog-txt">0 / 0</span>
-        </div>
-        <div class="prog-wrap">
-          <div class="prog-bar" id="prog-bar"></div>
-        </div>
-        <div class="xp-bar-sidebar">
-          <span class="xp-bar-sidebar-label">XP</span>
-          <div class="xp-bar-sidebar-wrap">
-            <div class="xp-bar-sidebar-fill">
-              <div class="xp-bar-sidebar-progress" id="xp-bar-progress" style="width: 0%"></div>
-            </div>
-            <span class="xp-bar-sidebar-percent" id="xp-bar-percent">0%</span>
-          </div>
         </div>
         <button class="footer-btn" id="btn-profile"><i data-lucide="user"></i> Perfil</button>
         <button class="footer-btn" id="btn-prefs"><i data-lucide="settings"></i> Preferências</button>
@@ -189,27 +198,104 @@
 
     <!-- Main -->
     <main class="main">
+      <div id="trial-banner-container"></div>
       <div class="topbar">
         <button id="menu-toggle" class="menu-btn" title="Menu"><i data-lucide="menu"></i></button>
-        <div class="topbar-title" id="view-title">Todas as Tarefas</div>
+        <div class="topbar-title" id="view-title">Tarefas</div>
         <div class="topbar-actions">
+          <div class="view-toggle" id="view-toggle" style="display: flex; gap: 4px; margin-right: 8px;">
+            <button class="btn btn-ghost btn-sm active" data-mode="list" title="Lista" id="btn-view-list"><i data-lucide="list"></i></button>
+            <button class="btn btn-ghost btn-sm" data-mode="board" title="Quadro" id="btn-view-board"><i data-lucide="layout-dashboard"></i></button>
+          </div>
           <div class="search-box" id="search-wrap">
             <i data-lucide="search" class="search-icon"></i>
             <input type="text" placeholder="Buscar..." id="search-input">
           </div>
           <button class="btn btn-primary" id="add-task-btn"><i data-lucide="plus"></i> Tarefa</button>
+          <button id="right-menu-toggle" class="menu-btn mobile-only" title="Info"
+            style="display: none; margin-left: 8px;"><i data-lucide="sidebar"></i></button>
         </div>
       </div>
       <div class="filters" id="filters-bar">
+        <!-- Priority Chips -->
         <button class="chip active" data-pri="all">Todas</button>
-        <button class="chip" data-pri="high">🔴 Alta</button>
-        <button class="chip" data-pri="medium">🟡 Média</button>
-        <button class="chip" data-pri="low">🟢 Baixa</button>
-        <button class="chip" data-pri="none">— Sem prioridade</button>
+        <button class="chip" data-pri="high"><i data-lucide="chevrons-up"></i> Alta</button>
+        <button class="chip" data-pri="medium"><i data-lucide="minus"></i> Média</button>
+        <button class="chip" data-pri="low"><i data-lucide="chevron-down"></i> Baixa</button>
+        <button class="chip" data-pri="none">Sem prioridade</button>
+
+        <!-- Group Filter -->
+        <div class="group-filter-wrap" style="margin-left: 8px;">
+          <i data-lucide="folder-tree"></i>
+          <select id="group-filter-select" class="group-select">
+            <option value="all">Todos os Grupos</option>
+          </select>
+        </div>
       </div>
       <div class="task-container" id="task-container"></div>
+      <div class="board-container hidden" id="board-container"></div>
       <div class="report-container hidden" id="report-container"></div>
+      <div class="tutorial-container hidden" id="tutorial-container">
+        <!-- JS renderiza aqui -->
+      </div>
     </main>
+
+    <!-- Right Panel -->
+    <aside class="right-panel">
+      <button id="btn-close-right" class="menu-btn mobile-only"
+        style="display: none; align-self: flex-end; margin-bottom: 10px;"><i data-lucide="x"></i></button>
+      <!-- Pomodoro Widget -->
+      <div class="pomo-widget right-panel-widget">
+        <div class="pomo-header">
+          <span class="pomo-label"><i data-lucide="timer"></i> Pomodoro</span>
+          <span class="pomo-mode-badge" id="pomo-mode-badge">Foco</span>
+        </div>
+        <div class="pomo-ring-wrap">
+          <svg class="pomo-svg" viewBox="0 0 80 80">
+            <circle class="pomo-track" cx="40" cy="40" r="34" />
+            <circle class="pomo-fill" cx="40" cy="40" r="34" id="pomo-progress" transform="rotate(-90 40 40)" />
+          </svg>
+          <div class="pomo-time" id="pomo-time">25:00</div>
+        </div>
+        <div class="pomo-controls">
+          <button class="pomo-btn" id="pomo-play-btn"><i data-lucide="play"></i></button>
+          <button class="pomo-btn" id="pomo-reset-btn" title="Resetar"><i data-lucide="rotate-ccw"></i></button>
+          <button class="pomo-btn" id="pomo-skip-btn" title="Pular"><i data-lucide="skip-forward"></i></button>
+        </div>
+      </div>
+
+      <!-- Daily Tasks Progress -->
+      <div class="daily-widget right-panel-widget">
+        <div class="pomo-header">
+          <span class="pomo-label"><i data-lucide="layout-list"></i> Tarefas do Dia</span>
+        </div>
+        <div class="daily-ring-wrap">
+          <svg class="daily-svg" viewBox="0 0 80 80">
+            <circle class="daily-track" cx="40" cy="40" r="34" />
+            <circle class="daily-fill" cx="40" cy="40" r="34" id="daily-progress" transform="rotate(-90 40 40)" />
+          </svg>
+          <div class="daily-time" id="daily-text">0/0</div>
+        </div>
+        <div class="daily-completed-msg" id="daily-msg">Bora começar!</div>
+      </div>
+
+      <!-- Mini Calendar -->
+      <div class="mini-calendar-widget right-panel-widget" id="mini-calendar">
+        <!-- Renderizado via JS -->
+      </div>
+
+      <!-- Feedback Widget -->
+      <div class="feedback-widget right-panel-widget">
+        <div class="pomo-header">
+          <span class="pomo-label"><i data-lucide="message-square"></i> Feedback</span>
+        </div>
+        <p class="feedback-text">Tem alguma sugestão ou encontrou um bug?</p>
+        <a href="mailto:falecom@nanotask.com.br?subject=Feedback NanoTask" class="feedback-btn"
+          style="margin-top: 10px;">
+          Enviar Sugestão
+        </a>
+      </div>
+    </aside>
 
   </div>
 
@@ -218,6 +304,7 @@
     <div class="modal">
       <div class="modal-title" id="tm-heading">Nova Tarefa</div>
       <input type="hidden" id="tm-id">
+      <input type="hidden" id="tm-column-id">
       <div class="form-group">
         <label class="form-label" for="tm-title">Título</label>
         <input type="text" class="form-input" id="tm-title" placeholder="O que precisa ser feito?">
@@ -234,11 +321,23 @@
         <div class="form-group">
           <label class="form-label">Prioridade</label>
           <div class="pri-row">
-            <button class="pri-btn ph" data-pri="high">🔴</button>
-            <button class="pri-btn pm" data-pri="medium">🟡</button>
-            <button class="pri-btn pl" data-pri="low">🟢</button>
-            <button class="pri-btn pn sel" data-pri="none">—</button>
+            <button class="pri-btn ph tooltip-wrap" data-pri="high"><i data-lucide="chevrons-up"></i><span
+                class="tooltip">Alta</span></button>
+            <button class="pri-btn pm tooltip-wrap" data-pri="medium"><i data-lucide="minus"></i><span
+                class="tooltip">Média</span></button>
+            <button class="pri-btn pl tooltip-wrap" data-pri="low"><i data-lucide="chevron-down"></i><span
+                class="tooltip">Baixa</span></button>
           </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="tm-recurrence">Recorrência</label>
+          <select class="form-input" id="tm-recurrence"
+            style="background: rgba(0,0,0,0.2); border: 1px solid var(--border-color); color: #fff;">
+            <option value="none">Nenhuma</option>
+            <option value="daily">Diária</option>
+            <option value="weekly">Semanal</option>
+            <option value="monthly">Mensal</option>
+          </select>
         </div>
       </div>
       <div class="form-group">
@@ -279,7 +378,8 @@
         <div class="opt-sub">Marca a tarefa e todas as subtarefas como concluídas</div>
       </button>
       <button class="confirm-option" id="btn-promote-subs">
-        <div class="opt-title"><i data-lucide="arrow-up-right"></i> Transformar subtarefas em tarefas independentes</div>
+        <div class="opt-title"><i data-lucide="arrow-up-right"></i> Transformar subtarefas em tarefas independentes
+        </div>
         <div class="opt-sub">As subtarefas pendentes viram novas tarefas na lista</div>
       </button>
       <div class="modal-actions">
@@ -317,11 +417,6 @@
       <div class="modal-title">Preferências</div>
 
       <div class="prefs-section">
-        <div class="prefs-section-title">Geral</div>
-        <div class="form-group">
-          <label class="form-label" for="pref-company">Nome da empresa</label>
-          <input type="text" class="form-input" id="pref-company" placeholder="Minha Empresa">
-        </div>
         <div class="form-group">
           <label class="form-label" for="pref-lang">Idioma</label>
           <select class="form-select" id="pref-lang">
@@ -358,10 +453,20 @@
       </div>
 
       <div class="prefs-section">
-        <div class="prefs-section-title">Tema</div>
-        <div class="form-group">
-          <label class="form-label">Cor de destaque</label>
-          <div class="color-row" id="pref-accent"></div>
+        <div class="prefs-section-title">Tema e Cores</div>
+        <div class="form-row-2">
+          <div class="form-group">
+            <label class="form-label" for="pref-theme">Modo do Tema</label>
+            <select class="form-select" id="pref-theme">
+              <option value="system">Sistema (Automático)</option>
+              <option value="light">Claro</option>
+              <option value="dark">Escuro</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Cor de destaque</label>
+            <div class="color-row" id="pref-accent"></div>
+          </div>
         </div>
       </div>
 
@@ -442,7 +547,83 @@
         </div>
         <button class="profile-close-btn" id="btn-close-profile"><i data-lucide="x"></i></button>
       </div>
-      <div id="profile-content"></div>
+
+      <div style="margin-top: 15px; margin-bottom: 5px; text-align: center;">
+        <button class="btn" id="btn-open-edit-profile"
+          style="width: 100%; background: var(--surface-light); color: var(--text); border: 1px solid var(--border);">
+          <i data-lucide="edit-3" style="width: 16px; margin-right: 6px;"></i> Alterar dados
+        </button>
+      </div>
+
+      <div id="profile-content">
+        <div class="profile-stats-grid" style="margin-top: 25px;">
+          <div class="profile-stat-card">
+            <div class="prog-label"
+              style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 12px; font-weight: 600;">
+              <span>Progresso Global</span>
+              <span id="prog-txt">0 / 0</span>
+            </div>
+            <div class="prog-wrap"
+              style="height: 8px; background: var(--border); border-radius: 4px; overflow: hidden;">
+              <div class="prog-bar" id="prog-bar"
+                style="height: 100%; width: 0%; background: var(--accent); transition: width 0.3s;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── EDIT PROFILE MODAL ── -->
+  <div class="overlay" id="edit-profile-overlay">
+    <div class="modal">
+      <div class="modal-title">Editar Perfil</div>
+
+      <div class="form-group">
+        <label class="form-label" for="ep-name">Nome</label>
+        <input type="text" class="form-input" id="ep-name">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="ep-company">Nome da empresa</label>
+        <input type="text" class="form-input" id="ep-company">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="ep-profession">Profissão</label>
+        <input type="text" class="form-input" id="ep-profession">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="ep-instagram">Perfil do Instagram</label>
+        <input type="text" class="form-input" id="ep-instagram" placeholder="@seuinstagram">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="ep-objective">Objetivo de uso do NanoTask</label>
+        <select class="form-select" id="ep-objective">
+          <option value="">Selecione...</option>
+          <option value="produtividade pessoal">Produtividade pessoal</option>
+          <option value="gestão de projetos">Gestão de projetos</option>
+          <option value="organização de estudos">Organização de estudos</option>
+          <option value="gestão de clientes">Gestão de clientes</option>
+          <option value="outro">Outro</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="ep-birthdate">Data de nascimento</label>
+        <input type="date" class="form-input" id="ep-birthdate">
+      </div>
+      <div class="form-group">
+        <div class="toggle-row" style="margin-top: 10px;">
+          <span>Desejo receber e-mails e dicas de produtividade</span>
+          <label class="toggle-switch">
+            <input type="checkbox" id="ep-marketing">
+            <span class="toggle-thumb"></span>
+          </label>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn btn-ghost" id="btn-cancel-edit-profile">Cancelar</button>
+        <button class="btn btn-primary" id="btn-save-edit-profile">Salvar Dados</button>
+      </div>
     </div>
   </div>
 
@@ -455,10 +636,39 @@
   <!-- ── FAB MOBILE ── -->
   <button id="fab-add-task" class="fab" aria-label="Nova tarefa"><i data-lucide="plus"></i></button>
 
-  <script type="module" src="js/main.js"></script>
-  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- ── RESTRICTED ACCESS OVERLAY ── -->
+  <div id="restricted-view" class="restricted-overlay hidden">
+    <div class="restricted-card">
+      <div class="restricted-icon"><i data-lucide="lock"></i></div>
+      <h2 class="restricted-title">Acesso Restrito</h2>
+      <p class="restricted-text" id="restricted-reason">Seu período de teste grátis expirou. Assine agora para
+        continuar
+        utilizando o NanoTask sem interrupções e não perder seu progresso.</p>
+      <div class="restricted-actions">
+        <button class="btn btn-primary btn-full" onclick="window.openCheckout?.('annual')">Plano Anual (R$
+          89,90)</button>
+        <button class="btn btn-outline btn-full"
+          style="background:transparent; border:1px solid var(--border); color:var(--text);"
+          onclick="window.openCheckout?.('monthly')">Plano Mensal (R$ 19,90)</button>
+        <button class="restricted-logout" id="btn-logout-restricted">Sair da conta</button>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="js/main.js?v=20260309"></script>
+  <script src="js/lucide.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => lucide.createIcons());
+
+    // ── SERVICE WORKER REGISTRATION ──
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+          .then(reg => console.log('[PWA] Service Worker registrado:', reg.scope))
+          .catch(err => console.error('[PWA] Erro ao registrar SW:', err));
+      });
+    }
   </script>
 </body>
 

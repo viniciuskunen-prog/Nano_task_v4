@@ -7,18 +7,26 @@ import { checkBadges } from './badges.js';
 const POMO_CIRC = 213.6;
 
 // ── TIMER STATE ───────────────────────────────────────────
-export const timerState = JSON.parse(
-  localStorage.getItem('timerState') ||
-  '{"taskId":null,"running":false,"startedAt":null,"elapsed":0}'
-);
+export const timerState = (() => {
+  try {
+    return JSON.parse(localStorage.getItem('timerState') || 'null') ||
+      { taskId: null, running: false, startedAt: null, elapsed: 0 };
+  } catch {
+    return { taskId: null, running: false, startedAt: null, elapsed: 0 };
+  }
+})();
 
 let timerInterval = null;
 
 // ── POMODORO STATE ────────────────────────────────────────
-export const pomodoroState = JSON.parse(
-  localStorage.getItem('pomodoroState') ||
-  '{"mode":"work","duration":1500,"remaining":1500,"running":false,"linkedTaskId":null,"sessions":0}'
-);
+export const pomodoroState = (() => {
+  try {
+    return JSON.parse(localStorage.getItem('pomodoroState') || 'null') ||
+      { mode: 'work', duration: 1500, remaining: 1500, running: false, linkedTaskId: null, sessions: 0 };
+  } catch {
+    return { mode: 'work', duration: 1500, remaining: 1500, running: false, linkedTaskId: null, sessions: 0 };
+  }
+})();
 
 // Daily stats — reset when day changes
 function getTodayKey() { return new Date().toISOString().split('T')[0]; }
@@ -50,41 +58,38 @@ export function pomodoroToggle() {
       saveTimerState();
     }
   } else {
-    startPomodoro();
+    // Validar tarefa vinculada antes de iniciar
+    if (pomodoroState.linkedTaskId) {
+      const linkedTask = state.tasks.find(t => t.id === pomodoroState.linkedTaskId);
+      if (!linkedTask || linkedTask.done) {
+        pomodoroReset();
+        unlinkTask();
+        return;
+      }
+    }
+
+    pomodoroState.running = true;
+    pomodoroInterval = setInterval(pomodoroTick, 1000);
+    // Start linked task timer too
+    if (pomodoroState.linkedTaskId) {
+      const id = pomodoroState.linkedTaskId;
+      if (timerState.taskId !== id) {
+        if (timerState.taskId && timerState.running) {
+          timerState.elapsed += Math.floor((Date.now() - timerState.startedAt) / 1000);
+          saveTaskTime(timerState.taskId, timerState.elapsed);
+        }
+        const t = state.tasks.find(t => t.id === id);
+        timerState.taskId = id;
+        timerState.elapsed = t?.time_spent || 0;
+      }
+      timerState.running = true;
+      timerState.startedAt = Date.now();
+      saveTimerState();
+      startTimerTick();
+    }
   }
   updatePomodoroUI();
   savePomodoroState();
-}
-
-export function startPomodoro() {
-  if (pomodoroState.running) return;
-
-  // Validar tarefa vinculada antes de iniciar
-  if (pomodoroState.linkedTaskId) {
-    const linkedTask = state.tasks.find(t => t.id === pomodoroState.linkedTaskId);
-    if (!linkedTask || linkedTask.done) {
-      pomodoroReset();
-      unlinkTask();
-      return;
-    }
-  }
-
-  pomodoroState.running = true;
-  pomodoroInterval = setInterval(pomodoroTick, 1000);
-
-  // Start linked task timer too
-  if (pomodoroState.linkedTaskId) {
-    const id = pomodoroState.linkedTaskId;
-    if (timerState.taskId !== id) {
-      const t = state.tasks.find(t => t.id === id);
-      timerState.taskId = id;
-      timerState.elapsed = t?.time_spent || 0;
-    }
-    timerState.running = true;
-    timerState.startedAt = Date.now();
-    saveTimerState();
-    startTimerTick();
-  }
 }
 
 export function pomodoroReset() {
@@ -155,13 +160,23 @@ async function pomodoroComplete() {
 
   if (pomodoroState.mode === 'work') {
     pomodoroState.sessions++;
-    
+
     // Registrar atividade e conceder XP
     await logActivity('pomodoro_finished', 1); // pomodoro_complete = 1 XP
-    
+
     // Verificar badges de pomodoro (após atualizar contador)
     await checkBadges('pomodoro_complete');
-    stopLinkedTaskTimer();
+
+    if (pomodoroState.linkedTaskId && timerState.taskId === pomodoroState.linkedTaskId) {
+      // O timer que estava rodando junto com o Pomodoro vai somar o elapsed naturalmente,
+      // então só precisamos pausar e não adicionar +25 min artificialmente.
+      timerState.elapsed += Math.floor((Date.now() - timerState.startedAt) / 1000);
+      timerState.running = false;
+      timerState.startedAt = null;
+      saveTaskTime(pomodoroState.linkedTaskId, timerState.elapsed);
+      saveTimerState();
+    }
+
     toast('Pomodoro concluído! 🍅');
     sendNotification('Pomodoro concluído!', 'Hora de descansar.');
     // Update daily stats
@@ -186,31 +201,6 @@ async function pomodoroComplete() {
   pomodoroState.remaining = pomodoroState.duration;
   updatePomodoroUI();
   savePomodoroState();
-}
-
-function stopLinkedTaskTimer() {
-  if (!pomodoroState.linkedTaskId) return;
-  if (timerState.taskId !== pomodoroState.linkedTaskId || !timerState.running) return;
-
-  timerState.elapsed += Math.floor((Date.now() - timerState.startedAt) / 1000);
-  timerState.running = false;
-  timerState.startedAt = null;
-  clearInterval(timerInterval);
-  timerInterval = null;
-
-  const t = state.tasks.find(task => task.id === timerState.taskId);
-  if (t) {
-    t.time_spent = timerState.elapsed;
-    saveTaskTime(t.id, t.time_spent);
-  }
-
-  const timerBtn = document.querySelector(`#task-${timerState.taskId} .task-timer-btn`);
-  if (timerBtn) {
-    timerBtn.className = 'task-timer-btn';
-    timerBtn.innerHTML = `⏱ ${formatTimer(timerState.elapsed)}`;
-  }
-
-  saveTimerState();
 }
 
 export function unlinkPomodoro() {
@@ -239,27 +229,18 @@ export function updatePomodoroUI() {
     badge.className = 'pomo-mode-badge' + (mode !== 'work' ? ' break' : '');
   }
 
+  const ringWrap = document.querySelector('.pomo-ring-wrap');
+  if (ringWrap) ringWrap.classList.toggle('running', pomodoroState.running);
+
   const playBtn = document.getElementById('pomo-play-btn');
-  if (playBtn) { playBtn.textContent = running ? '⏸' : '▶'; playBtn.classList.toggle('active', running); }
+  if (playBtn) {
+    playBtn.innerHTML = `<i data-lucide="${running ? 'pause' : 'play'}"></i>`;
+    playBtn.classList.toggle('active', running);
+  }
+  if (window.lucide) window.lucide.createIcons();
 }
 
-export function updatePomodoroLinked() {
-  const el = document.getElementById('pomo-linked-task');
-  if (!el) return;
-  if (pomodoroState.linkedTaskId) {
-    const t = state.tasks.find(t => t.id === pomodoroState.linkedTaskId);
-    // Se tarefa foi deletada ou não existe mais, desvincular
-    if (!t && pomodoroState.linkedTaskId) {
-      unlinkTask();
-      return;
-    }
-    const title = t ? t.title.substring(0, 26) + (t.title.length > 26 ? '…' : '') : '';
-    el.textContent = t ? `◎ ${title}` : '— sem tarefa vinculada';
-  } else {
-    el.textContent = '— sem tarefa vinculada';
-  }
-  updatePomoStats();
-}
+
 
 export function updatePomoStats() {
   const ds = getDailyStats();
@@ -304,9 +285,6 @@ export function toggleTimer(taskId) {
     timerState.running = true;
     timerState.startedAt = Date.now();
 
-    // Auto-link to pomodoro
-    if (!pomodoroState.linkedTaskId) { pomodoroState.linkedTaskId = taskId; updatePomodoroLinked(); }
-
     saveTimerState();
     startTimerTick();
     const el = document.querySelector(`#task-${taskId} .task-timer-btn`);
@@ -337,7 +315,7 @@ if (timerState.running && timerState.taskId) startTimerTick();
 function getPomoDuration() { return (parseInt(state.profile.pomo_duration) || 25) * 60; }
 function getBreakDuration(long) {
   return long ? (parseInt(state.profile.break_long_duration) || 15) * 60
-              : (parseInt(state.profile.break_duration) || 5) * 60;
+    : (parseInt(state.profile.break_duration) || 5) * 60;
 }
 
 function savePomodoroState() {
@@ -358,7 +336,7 @@ export function playSound(type) {
       g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + t + 0.22);
       o.start(ctx.currentTime + t); o.stop(ctx.currentTime + t + 0.22);
     });
-  } catch (_) {}
+  } catch (err) { console.warn('[pomodoro] Audio API error', err); }
 }
 
 // ── NOTIFICATIONS ─────────────────────────────────────────
@@ -380,5 +358,5 @@ export function updateNotifBtn() {
 
 function sendNotification(title, body) {
   if (Notification.permission !== 'granted') return;
-  try { new Notification(title, { body, icon: '/favicon.ico' }); } catch (_) {}
+  try { new Notification(title, { body, icon: '/favicon.ico' }); } catch (err) { console.warn('[pomodoro] Notif error', err); }
 }
